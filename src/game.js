@@ -366,7 +366,6 @@
         reverseMover(P);
       } else if (P.p === 0 && open) {
         P.dir = want;
-        P.stopped = false;
       }
     }
 
@@ -760,8 +759,10 @@
   /* ==================================================================
      11. RENDERING
      ================================================================== */
+  // Each level re-lights the maze with a different neon hue.
+  const THEME_HUES = [206, 172, 266, 322, 34, 138];
   function theme() {
-    const hue = (206 + (game.level - 1) * 27) % 360;
+    const hue = THEME_HUES[(game.level - 1) % THEME_HUES.length];
     return {
       inset: `hsl(${hue} 62% 13%)`,
       deep: `hsl(${hue} 70% 7%)`,

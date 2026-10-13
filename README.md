@@ -30,6 +30,8 @@ On a phone: swipe anywhere on the board, or use the on-screen d-pad.
 - **Eat a scared hunter** — 200 → 400 → 800 points for the same orb, and its
   eyes sprint home to respawn.
 - **Extra life** at 10,000 points. **Bonus gem** appears after 70 and 170 dots.
+- **Every level re-lights the maze** with a new neon hue as it gets harder —
+  hunters speed up, scatters shorten, and the power orbs stop lasting as long.
 - Touching a hunter costs a life. Three lives, then it's over. Best score is
   saved locally.
 
@@ -74,10 +76,10 @@ the hunters' pen is properly sealed.
 ## Tests
 
 ```
-npm test          # or run them one at a time:
-node tools/maze-check.mjs
-node tools/smoke-test.mjs
-node tools/balance-test.mjs
+npm test                              # all three, in order
+node tools/maze-check.mjs             # board geometry
+node tools/smoke-test.mjs             # plays the real game file
+node tools/balance-test.mjs --runs 6  # more scripted games
 ```
 
 `smoke-test` boots the real game file inside a stubbed DOM and plays it: it
