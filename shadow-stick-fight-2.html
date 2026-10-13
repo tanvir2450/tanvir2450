@@ -220,7 +220,7 @@
     <div class="stats-strip">
       <div class="badge badge-coins" id="coin-badge">🪙 200</div>
       <div class="badge badge-xp" id="xp-badge">⭐ LVL 1</div>
-      <div class="badge badge-progress" id="progress-badge">🏮 ACT I • LV 1/30</div>
+      <div class="badge badge-progress" id="progress-badge">🏮 ARC I • LV 1/30</div>
     </div>
     <div class="nav-buttons">
       <button class="nav-btn active" id="nav-fight">⚔️ Fight</button>
@@ -486,11 +486,11 @@ let playerLevel = 1;
 const weaponLevels = [1, 1, 1, 1, 1];
 let selectedEnchantIdx = 0;
 
-// ---- CAMPAIGN PROGRESSION: 5 ACTS x 30 LEVELS = 150 LEVELS ----
-const LEVELS_PER_ACT = 30;
-const ACT_COUNT = 5;
-const TOTAL_LEVELS = LEVELS_PER_ACT * ACT_COUNT;   // 150
-const BOSS_EVERY = 10;                              // boss on level 10 / 20 / 30 of every act
+// ---- CAMPAIGN PROGRESSION: 5 ARCS x 30 LEVELS = 150 LEVELS ----
+const LEVELS_PER_ARC = 30;
+const ARC_COUNT = 5;
+const TOTAL_LEVELS = LEVELS_PER_ARC * ARC_COUNT;   // 150
+const BOSS_EVERY = 10;                              // boss on level 10 / 20 / 30 of every arc
 
 // Map & Armory unlock progressively, one cleared level after another
 const ARMORY_UNLOCK_AT = 1;   // clear Level 1  -> Armory opens
@@ -512,12 +512,12 @@ function levelFromXP(xp) {
 
 function isArmoryUnlocked() { return progressLevel >= ARMORY_UNLOCK_AT; }
 function isMapUnlocked()    { return progressLevel >= MAP_UNLOCK_AT; }
-function maxUnlockedAct()   { return Math.min(ACT_COUNT - 1, Math.floor(progressLevel / LEVELS_PER_ACT)); }
-function isActUnlocked(a)   { return a <= maxUnlockedAct(); }
+function maxUnlockedArc()   { return Math.min(ARC_COUNT - 1, Math.floor(progressLevel / LEVELS_PER_ARC)); }
+function isArcUnlocked(a)   { return a <= maxUnlockedArc(); }
 function isLevelUnlocked(l) { return l < TOTAL_LEVELS && l <= progressLevel; }
 function isLevelCleared(l)  { return l < progressLevel; }
-function actOfLevel(l)      { return Math.min(ACT_COUNT - 1, Math.floor(l / LEVELS_PER_ACT)); }
-function stepOfLevel(l)     { return (l % LEVELS_PER_ACT) + 1; }
+function arcOfLevel(l)      { return Math.min(ARC_COUNT - 1, Math.floor(l / LEVELS_PER_ARC)); }
+function stepOfLevel(l)     { return (l % LEVELS_PER_ARC) + 1; }
 
 // Toast messages for lock / unlock feedback (queued so nothing is missed)
 const toastQueue = [];
@@ -558,9 +558,9 @@ function drawToast() {
 }
 
 // Level helpers used by the World Map
-function nextLevelOfAct(a) {
-  const start = a * LEVELS_PER_ACT;
-  return Math.max(start, Math.min(progressLevel, start + LEVELS_PER_ACT - 1, TOTAL_LEVELS - 1));
+function nextLevelOfArc(a) {
+  const start = a * LEVELS_PER_ARC;
+  return Math.max(start, Math.min(progressLevel, start + LEVELS_PER_ARC - 1, TOTAL_LEVELS - 1));
 }
 
 function loadProgress() {
@@ -606,9 +606,9 @@ function addRewards(coins, xp) {
 function updateTopBarStats() {
   document.getElementById('coin-badge').textContent = `🪙 ${playerCoins}`;
   document.getElementById('xp-badge').textContent = `⭐ LVL ${playerLevel}`;
-  const actIdx = actOfLevel(Math.min(currentLevel, TOTAL_LEVELS - 1));
+  const arcIdx = arcOfLevel(Math.min(currentLevel, TOTAL_LEVELS - 1));
   const step = stepOfLevel(Math.min(currentLevel, TOTAL_LEVELS - 1));
-  document.getElementById('progress-badge').textContent = `🏮 ACT ${['I','II','III','IV','V'][actIdx]} • LV ${step}/${LEVELS_PER_ACT}`;
+  document.getElementById('progress-badge').textContent = `🏮 ARC ${['I','II','III','IV','V'][arcIdx]} • LV ${step}/${LEVELS_PER_ARC}`;
 
   const armBtn = document.getElementById('nav-armory');
   const mapBtn = document.getElementById('nav-map');
@@ -626,7 +626,7 @@ const ENCHANTMENTS = [
 ];
 
 // ============================================================================
-// 3. WEAPONS, CHARACTERS & 5 SHADOW FIGHT ACTS
+// 3. WEAPONS, CHARACTERS & 5 SHADOW FIGHT ARCS
 // ============================================================================
 const WEAPONS = [
   { id: 'fists',      name: 'MARTIAL GAUNTLETS', reachBonus: 6,  dmgMult: 1.02, speedMult: 1.20, color: '#ffffff', glow: '#00e5ff', sfx: 'hit' },
@@ -661,7 +661,7 @@ const CHARACTERS = [
 
 const STAGES = [
   {
-    id: 0, act: 'ACT I', name: 'CRIMSON BAMBOO DOJO',
+    id: 0, arc: 'ARC I', name: 'CRIMSON BAMBOO DOJO',
     skyTop: '#2b0918', skyMid: '#7a1c33', skyBot: '#d9534f',
     sunColor: 'rgba(255, 190, 110, 0.88)', mountainColor: '#1a0710',
     groundColor: '#12050a', groundLine: '#ff6b6b', particleType: 'petals',
@@ -681,7 +681,7 @@ const STAGES = [
     }
   },
   {
-    id: 1, act: 'ACT II', name: 'MISTY MOON PAGODA',
+    id: 1, arc: 'ARC II', name: 'MISTY MOON PAGODA',
     skyTop: '#081026', skyMid: '#132952', skyBot: '#29628a',
     sunColor: 'rgba(210, 240, 255, 0.9)', mountainColor: '#071120',
     groundColor: '#050b14', groundLine: '#4dd0e1', particleType: 'fireflies',
@@ -701,7 +701,7 @@ const STAGES = [
     }
   },
   {
-    id: 2, act: 'ACT III', name: 'HERMIT’S STORM PEAK',
+    id: 2, arc: 'ARC III', name: 'HERMIT’S STORM PEAK',
     skyTop: '#0d1b1e', skyMid: '#1b4332', skyBot: '#52b788',
     sunColor: 'rgba(220, 255, 210, 0.85)', mountainColor: '#081c15',
     groundColor: '#05100c', groundLine: '#69f0ae', particleType: 'leaves',
@@ -721,7 +721,7 @@ const STAGES = [
     }
   },
   {
-    id: 3, act: 'ACT IV', name: 'VOLCANIC FORGE CITADEL',
+    id: 3, arc: 'ARC IV', name: 'VOLCANIC FORGE CITADEL',
     skyTop: '#1a0500', skyMid: '#5c1605', skyBot: '#d84315',
     sunColor: 'rgba(255, 110, 40, 0.88)', mountainColor: '#180602',
     groundColor: '#100400', groundLine: '#ff9100', particleType: 'embers',
@@ -741,7 +741,7 @@ const STAGES = [
     }
   },
   {
-    id: 4, act: 'ACT V', name: 'GATES OF SHADOWS',
+    id: 4, arc: 'ARC V', name: 'GATES OF SHADOWS',
     skyTop: '#06020f', skyMid: '#1f093d', skyBot: '#5e17eb',
     sunColor: 'rgba(180, 110, 255, 0.92)', mountainColor: '#0b0317',
     groundColor: '#06010d', groundLine: '#b388ff', particleType: 'shadowOrbs',
@@ -763,27 +763,27 @@ const STAGES = [
 ];
 
 // ============================================================================
-// 3b. LEVEL / ENEMY GENERATOR — 30 LEVELS PER ACT, BOSS EVERY 10 LEVELS
+// 3b. LEVEL / ENEMY GENERATOR — 30 LEVELS PER ARC, BOSS EVERY 10 LEVELS
 // ============================================================================
-const BOSS_KIND_MULT = { grunt: 1.0, mini: 1.20, elite: 1.35, actboss: 2.00 };
-const BOSS_POWER_MULT = { grunt: 1.0, mini: 1.02, elite: 1.06, actboss: 1.14 };
+const BOSS_KIND_MULT = { grunt: 1.0, mini: 1.20, elite: 1.35, arcboss: 2.00 };
+const BOSS_POWER_MULT = { grunt: 1.0, mini: 1.02, elite: 1.06, arcboss: 1.14 };
 
 function levelBadge(levelIdx) {
   const step = stepOfLevel(levelIdx);
-  if (step === LEVELS_PER_ACT) return 'actboss';
+  if (step === LEVELS_PER_ARC) return 'arcboss';
   if (step % BOSS_EVERY === 0) return step === 20 ? 'elite' : 'mini';
   return 'grunt';
 }
 
 function enemyConfigForLevel(levelIdx) {
-  const actIdx = actOfLevel(levelIdx);
+  const arcIdx = arcOfLevel(levelIdx);
   const step = stepOfLevel(levelIdx);
-  const stage = STAGES[actIdx];
+  const stage = STAGES[arcIdx];
   const roster = stage.roster;
   const kind = levelBadge(levelIdx);
 
   let base;
-  if (kind === 'actboss')   base = { ...stage.enemy, title: `ACT ${['I','II','III','IV','V'][actIdx]} FINAL BOSS — ${stage.enemy.title}` };
+  if (kind === 'arcboss')   base = { ...stage.enemy, title: `ARC ${['I','II','III','IV','V'][arcIdx]} FINAL BOSS — ${stage.enemy.title}` };
   else if (kind === 'elite') base = roster.elite;
   else if (kind === 'mini')  base = roster.mini;
   else                       base = roster.minions[(step - 1) % roster.minions.length];
@@ -1918,8 +1918,8 @@ let selectedWeaponIdx = CHARACTERS[0].defaultWeapon;
 let currentStageIdx = 0;
 
 let screenView = 'arena';
-let mapSubView = 'acts';     // 'acts' -> 5 Act cards | 'levels' -> 30 level grid
-let mapActIdx = 0;
+let mapSubView = 'arcs';     // 'arcs' -> 5 Arc cards | 'levels' -> 30 level grid
+let mapArcIdx = 0;
 let matchState = 'fight';
 let player, enemy;
 let timer = 60 * 60;
@@ -1944,21 +1944,21 @@ function switchScreen(view) {
 function tryOpenScreen(view) {
   if (view === 'armory' && !isArmoryUnlocked()) {
     sfx.play('block', 0.7);
-    showToast(`🔒 ARMORY LOCKED — Clear Level ${ARMORY_UNLOCK_AT} of Act I to unlock!`, 190);
+    showToast(`🔒 ARMORY LOCKED — Clear Level ${ARMORY_UNLOCK_AT} of Arc I to unlock!`, 190);
     return;
   }
   if (view === 'map' && !isMapUnlocked()) {
     sfx.play('block', 0.7);
-    showToast(`🔒 WORLD MAP LOCKED — Clear Level ${MAP_UNLOCK_AT} of Act I to unlock!`, 190);
+    showToast(`🔒 WORLD MAP LOCKED — Clear Level ${MAP_UNLOCK_AT} of Arc I to unlock!`, 190);
     return;
   }
-  if (view === 'map') { mapSubView = 'acts'; }
+  if (view === 'map') { mapSubView = 'arcs'; }
   if (screenView !== view) switchScreen(view);
 }
 
 function startMatch(levelIdx) {
   currentLevel = Math.max(0, Math.min(TOTAL_LEVELS - 1, Math.floor(levelIdx)));
-  currentStageIdx = actOfLevel(currentLevel);
+  currentStageIdx = arcOfLevel(currentLevel);
   p1RoundsWon = 0;
   p2RoundsWon = 0;
   currentRoundNum = 1;
@@ -2089,23 +2089,23 @@ function handleGlobalHotkeys(k) {
       startMatch(currentLevel);
     }
   } else if (screenView === 'map') {
-    const actNames = ['I', 'II', 'III', 'IV', 'V'];
+    const arcNames = ['I', 'II', 'III', 'IV', 'V'];
     if (['1', '2', '3', '4', '5'].includes(k)) {
       const a = parseInt(k, 10) - 1;
-      if (!isActUnlocked(a)) {
+      if (!isArcUnlocked(a)) {
         sfx.play('block', 0.7);
-        showToast(`🔒 ACT ${actNames[a]} LOCKED — Clear all 30 levels of Act ${actNames[a - 1]} first!`, 200);
+        showToast(`🔒 ARC ${arcNames[a]} LOCKED — Clear all 30 levels of Arc ${arcNames[a - 1]} first!`, 200);
       } else {
         mapSubView = 'levels';
-        mapActIdx = a;
+        mapArcIdx = a;
         sfx.play('select', 0.6);
       }
     } else if (k === 'escape' || k === 'backspace') {
-      mapSubView = 'acts';
+      mapSubView = 'arcs';
       sfx.play('select', 0.5);
     } else if (k === 'enter' || k === ' ') {
-      if (mapSubView === 'levels') startMatch(nextLevelOfAct(mapActIdx));
-      else startMatch(nextLevelOfAct(maxUnlockedAct()));
+      if (mapSubView === 'levels') startMatch(nextLevelOfArc(mapArcIdx));
+      else startMatch(nextLevelOfArc(maxUnlockedArc()));
     }
   } else if (screenView === 'arena') {
     if (matchState === 'roundEnd' && (k === 'enter' || k === ' ')) {
@@ -2331,12 +2331,12 @@ function drawFightHUD() {
   ctx.textAlign = 'center';
   const step = stepOfLevel(currentLevel);
   const kind = levelBadge(currentLevel);
-  const bossTag = kind === 'actboss' ? '  👑 ACT BOSS' : kind === 'elite' ? '  👑 ELITE BOSS' : kind === 'mini' ? '  ⚔️ MINI BOSS' : '';
+  const bossTag = kind === 'arcboss' ? '  👑 ARC BOSS' : kind === 'elite' ? '  👑 ELITE BOSS' : kind === 'mini' ? '  ⚔️ MINI BOSS' : '';
   const modeLabel = mode === 'Survival'
     ? `ECLIPSE SURVIVAL — WAVE ${survivalWave}`
     : mode === '2P Versus'
       ? `2P LOCAL VERSUS — ${stage.name} (ROUND ${currentRoundNum} OF 3)`
-      : `${stage.act} • LEVEL ${step}/${LEVELS_PER_ACT} — ${stage.name} (ROUND ${currentRoundNum} OF 3)${bossTag}`;
+      : `${stage.arc} • LEVEL ${step}/${LEVELS_PER_ARC} — ${stage.name} (ROUND ${currentRoundNum} OF 3)${bossTag}`;
   ctx.fillText(modeLabel, W / 2, 18);
 
   const barW = 370, barH = 22;
@@ -2408,7 +2408,7 @@ function drawFightHUD() {
     ctx.fillStyle = '#ff1744';
     ctx.shadowColor = '#ffeb3b';
     ctx.shadowBlur = 8;
-    const bossLabel = enemy.bossKind === 'actboss' ? 'ACT BOSS' : enemy.bossKind === 'elite' ? 'ELITE BOSS' : 'MINI BOSS';
+    const bossLabel = enemy.bossKind === 'arcboss' ? 'ARC BOSS' : enemy.bossKind === 'elite' ? 'ELITE BOSS' : 'MINI BOSS';
     ctx.fillText(`\u{1F451} ${bossLabel} \u{1F451}`, W - 120, 84);
     ctx.restore();
   }
@@ -2617,8 +2617,8 @@ function drawArmoryScreen() {
 
 function drawWorldMapScreen() {
   uiButtons.length = 0;
-  const actNames = ['I', 'II', 'III', 'IV', 'V'];
-  const bgIdx = mapSubView === 'levels' ? mapActIdx : Math.min(currentStageIdx, ACT_COUNT - 1);
+  const arcNames = ['I', 'II', 'III', 'IV', 'V'];
+  const bgIdx = mapSubView === 'levels' ? mapArcIdx : Math.min(currentStageIdx, ARC_COUNT - 1);
   drawStageBackground(STAGES[bgIdx]);
   ctx.fillStyle = 'rgba(8, 8, 18, 0.90)';
   ctx.fillRect(0, 0, W, H);
@@ -2627,15 +2627,15 @@ function drawWorldMapScreen() {
   ctx.font = 'bold 25px Arial';
   ctx.fillStyle = '#ffeb3b';
 
-  if (mapSubView === 'acts') {
-    ctx.fillText('\u{1F5FA} WORLD OF SHADOWS \u2014 5 ACTS \u00D7 30 LEVELS', W / 2, 32);
+  if (mapSubView === 'arcs') {
+    ctx.fillText('\u{1F5FA} WORLD OF SHADOWS \u2014 5 ARCS \u00D7 30 LEVELS', W / 2, 32);
     ctx.font = '13px Arial';
     ctx.fillStyle = '#ccc';
-    ctx.fillText(`Cleared ${progressLevel} / ${TOTAL_LEVELS} levels  \u2022  Tap an Act to open its 30 level gates`, W / 2, 54);
-    drawMapActNodes();
+    ctx.fillText(`Cleared ${progressLevel} / ${TOTAL_LEVELS} levels  \u2022  Tap an Arc to open its 30 level gates`, W / 2, 54);
+    drawMapArcNodes();
   } else {
-    const st = STAGES[mapActIdx];
-    ctx.fillText(`ACT ${actNames[mapActIdx]} \u2014 ${st.name}`, W / 2, 32);
+    const st = STAGES[mapArcIdx];
+    ctx.fillText(`ARC ${arcNames[mapArcIdx]} \u2014 ${st.name}`, W / 2, 32);
     ctx.font = '13px Arial';
     ctx.fillStyle = '#ccc';
     ctx.fillText('\u2705 cleared   \u25B6 next fight   \u{1F451} BOSS on Level 10 / 20 / 30   \u{1F512} locked', W / 2, 54);
@@ -2645,17 +2645,17 @@ function drawWorldMapScreen() {
   drawToast();
 }
 
-function drawMapActNodes() {
-  const actNames = ['I', 'II', 'III', 'IV', 'V'];
+function drawMapArcNodes() {
+  const arcNames = ['I', 'II', 'III', 'IV', 'V'];
   const cw = 176, ch = 316, gap = 18;
-  const startX = (W - (ACT_COUNT * cw + (ACT_COUNT - 1) * gap)) / 2;
+  const startX = (W - (ARC_COUNT * cw + (ARC_COUNT - 1) * gap)) / 2;
   const cy = 84;
 
-  for (let i = 0; i < ACT_COUNT; i++) {
+  for (let i = 0; i < ARC_COUNT; i++) {
     const st = STAGES[i];
-    const unlocked = isActUnlocked(i);
+    const unlocked = isArcUnlocked(i);
     const cx = startX + i * (cw + gap);
-    const cleared = Math.max(0, Math.min(LEVELS_PER_ACT, progressLevel - i * LEVELS_PER_ACT));
+    const cleared = Math.max(0, Math.min(LEVELS_PER_ARC, progressLevel - i * LEVELS_PER_ARC));
 
     ctx.fillStyle = unlocked ? 'rgba(20, 22, 38, 0.95)' : 'rgba(10, 10, 16, 0.95)';
     ctx.fillRect(cx, cy, cw, ch);
@@ -2691,7 +2691,7 @@ function drawMapActNodes() {
     ctx.textAlign = 'center';
     ctx.fillStyle = st.groundLine;
     ctx.font = 'bold 15px Arial';
-    ctx.fillText(`ACT ${actNames[i]}`, cx + cw / 2, cy + 24);
+    ctx.fillText(`ARC ${arcNames[i]}`, cx + cw / 2, cy + 24);
 
     // Boss portrait
     const px = cx + cw / 2, py = cy + 138;
@@ -2721,14 +2721,14 @@ function drawMapActNodes() {
     const bw2 = cw - 34, bx2 = cx + 17, by2 = cy + 222;
     ctx.fillStyle = '#222';
     ctx.fillRect(bx2, by2, bw2, 14);
-    ctx.fillStyle = cleared >= LEVELS_PER_ACT ? '#00e676' : '#ff9100';
-    ctx.fillRect(bx2, by2, bw2 * (cleared / LEVELS_PER_ACT), 14);
+    ctx.fillStyle = cleared >= LEVELS_PER_ARC ? '#00e676' : '#ff9100';
+    ctx.fillRect(bx2, by2, bw2 * (cleared / LEVELS_PER_ARC), 14);
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 1;
     ctx.strokeRect(bx2, by2, bw2, 14);
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 10px Arial';
-    ctx.fillText(`${cleared} / ${LEVELS_PER_ACT} LEVELS`, px, by2 + 11);
+    ctx.fillText(`${cleared} / ${LEVELS_PER_ARC} LEVELS`, px, by2 + 11);
 
     const btnY = cy + ch - 44;
     ctx.fillStyle = unlocked ? '#e94560' : 'rgba(80,80,90,0.7)';
@@ -2743,14 +2743,14 @@ function drawMapActNodes() {
     uiButtons.push({
       x: cx, y: cy, w: cw, h: ch,
       onClick: () => {
-        if (!isActUnlocked(i)) {
+        if (!isArcUnlocked(i)) {
           sfx.play('block', 0.7);
-          showToast(`\u{1F512} ACT ${actNames[i]} LOCKED \u2014 Clear all 30 levels of Act ${actNames[i - 1]} first!`, 200);
+          showToast(`\u{1F512} ARC ${arcNames[i]} LOCKED \u2014 Clear all 30 levels of Arc ${arcNames[i - 1]} first!`, 200);
           return;
         }
         sfx.play('select', 0.6);
         mapSubView = 'levels';
-        mapActIdx = i;
+        mapArcIdx = i;
       }
     });
   }
@@ -2761,10 +2761,10 @@ function drawMapLevelGrid() {
   const cw = 86, ch = 80, gapX = 8, gapY = 10;
   const startX = (W - (cols * cw + (cols - 1) * gapX)) / 2;
   const startY = 82;
-  const actNames = ['I', 'II', 'III', 'IV', 'V'];
+  const arcNames = ['I', 'II', 'III', 'IV', 'V'];
 
-  for (let s = 0; s < LEVELS_PER_ACT; s++) {
-    const lvl = mapActIdx * LEVELS_PER_ACT + s;
+  for (let s = 0; s < LEVELS_PER_ARC; s++) {
+    const lvl = mapArcIdx * LEVELS_PER_ARC + s;
     const r = Math.floor(s / cols), c = s % cols;
     const x = startX + c * (cw + gapX);
     const y = startY + r * (ch + gapY);
@@ -2818,7 +2818,7 @@ function drawMapLevelGrid() {
       ctx.fillText('\u{1F451}', x + cw / 2, y + 55);
       ctx.font = 'bold 9px Arial';
       ctx.fillStyle = '#ff8a80';
-      ctx.fillText(kind === 'actboss' ? 'ACT BOSS' : kind === 'elite' ? 'ELITE' : 'MINI', x + cw / 2, y + 70);
+      ctx.fillText(kind === 'arcboss' ? 'ARC BOSS' : kind === 'elite' ? 'ELITE' : 'MINI', x + cw / 2, y + 70);
     } else if (isNext) {
       ctx.font = 'bold 13px Arial';
       ctx.fillStyle = '#ffeb3b';
@@ -2854,11 +2854,11 @@ function drawMapBackButton() {
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 15px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText('\u25C0 ACT LIST', bx + bw / 2, by + 27);
+  ctx.fillText('\u25C0 ARC LIST', bx + bw / 2, by + 27);
 
   uiButtons.push({
     x: bx, y: by, w: bw, h: bh,
-    onClick: () => { sfx.play('select', 0.6); mapSubView = 'acts'; }
+    onClick: () => { sfx.play('select', 0.6); mapSubView = 'arcs'; }
   });
 }
 
@@ -2910,14 +2910,14 @@ function drawOverlayBanner(msg, sub = '', sub2 = '') {
 let frameCounter = 0;
 
 // One level at a time: winning the frontier level unlocks the next one and,
-// at every 30th clear, the following Act (plus Armory / Map milestones).
+// at every 30th clear, the following Arc (plus Armory / Map milestones).
 function grantLevelClear() {
   if (GAME_MODES[currentModeIdx] !== 'Campaign') return;
   if (currentLevel !== progressLevel) return;
   if (progressLevel >= TOTAL_LEVELS) return;
 
-  const actNames = ['I', 'II', 'III', 'IV', 'V'];
-  const beforeAct = actOfLevel(progressLevel);
+  const arcNames = ['I', 'II', 'III', 'IV', 'V'];
+  const beforeArc = arcOfLevel(progressLevel);
   const before = progressLevel;
   progressLevel++;
   saveProgress();
@@ -2928,9 +2928,9 @@ function grantLevelClear() {
   if (before < MAP_UNLOCK_AT && progressLevel >= MAP_UNLOCK_AT) {
     showToast('🗺️ UNLOCKED: WORLD MAP — Travel between Acts & replay levels!', 240);
   }
-  const afterAct = maxUnlockedAct();
-  if (afterAct > beforeAct && afterAct < ACT_COUNT) {
-    showToast(`🔥 UNLOCKED: ACT ${actNames[afterAct]} — ${STAGES[afterAct].name}! 30 new levels!`, 260);
+  const afterArc = maxUnlockedArc();
+  if (afterArc > beforeArc && afterArc < ARC_COUNT) {
+    showToast(`🔥 UNLOCKED: ARC ${arcNames[afterArc]} — ${STAGES[afterArc].name}! 30 new levels!`, 260);
   }
   if (progressLevel >= TOTAL_LEVELS) {
     showToast('👑 ALL 150 LEVELS CLEARED — YOU ARE THE SHADOW CHAMPION!', 320);
@@ -3019,7 +3019,7 @@ function loop() {
       if (mode2 === 'Survival') {
         titleBanner = `WAVE ${survivalWave}`;
       } else if (mode2 === 'Campaign') {
-        titleBanner = `LEVEL ${stepOfLevel(currentLevel)} / ${LEVELS_PER_ACT}`;
+        titleBanner = `LEVEL ${stepOfLevel(currentLevel)} / ${LEVELS_PER_ARC}`;
         if (enemy.isBossFight) {
           titleBanner += '  👑 BOSS';
           versusSub = `${enemy.name} — ${enemy.title}`;
@@ -3177,9 +3177,9 @@ function loop() {
       subMsg = 'All 150 levels cleared — the Gates of Shadows are yours!';
       btnMsg = '▶ REPLAY LEVEL 150 (TAP / ENTER)';
     } else if (isWin) {
-      const crossedAct = actOfLevel(currentLevel) !== actOfLevel(nextLvl);
-      mainMsg = crossedAct ? '🔥 ACT CLEARED! (+75 🪙)' : (enemy.isBossFight ? '👑 BOSS DEFEATED! (+75 🪙)' : 'VICTORY (+75 🪙)!');
-      subMsg = `Level ${stepOfLevel(currentLevel)}/${LEVELS_PER_ACT} cleared  •  Next: ${STAGES[actOfLevel(nextLvl)].act} — Level ${stepOfLevel(nextLvl)}${levelBadge(nextLvl) !== 'grunt' ? ' 👑 BOSS' : ''}`;
+      const crossedArc = arcOfLevel(currentLevel) !== arcOfLevel(nextLvl);
+      mainMsg = crossedArc ? '🔥 ARC CLEARED! (+75 🪙)' : (enemy.isBossFight ? '👑 BOSS DEFEATED! (+75 🪙)' : 'VICTORY (+75 🪙)!');
+      subMsg = `Level ${stepOfLevel(currentLevel)}/${LEVELS_PER_ARC} cleared  •  Next: ${STAGES[arcOfLevel(nextLvl)].arc} — Level ${stepOfLevel(nextLvl)}${levelBadge(nextLvl) !== 'grunt' ? ' 👑 BOSS' : ''}`;
       btnMsg = '▶ NEXT LEVEL (TAP / ENTER)';
     } else {
       mainMsg = 'DEFEATED!';
