@@ -1,0 +1,11 @@
+{
+  "name": "neon-chase",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A neon maze-chase arcade game — no dependencies, no build step.",
+  "scripts": {
+    "serve": "python3 -m http.server 4173 --bind 0.0.0.0",
+    "test": "node tools/maze-check.mjs && node tools/smoke-test.mjs && node tools/balance-test.mjs"
+  },
+  "license": "MIT"
+}
