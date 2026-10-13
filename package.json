@@ -1,10 +1,10 @@
 {
   "name": "one-piece-fight",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "2D side-scrolling fighting game for mobile browsers, drawn and synthesised entirely in code",
   "main": "index.js",
   "scripts": {
-    "start": "python3 -m http.server 8000",
+    "start": "node tools/serve.js",
     "test": "node test/harness.js",
     "nav": "node test/navigation.js",
     "layout": "node test/layout.js",
@@ -15,7 +15,8 @@
     "dps": "node test/dps.js",
     "devices": "node test/devices.js",
     "render": "node test/render.js",
-    "savecheck": "node test/savecheck.js"
+    "savecheck": "node test/savecheck.js",
+    "strict": "node test/strictcanvas.js"
   },
   "repository": {
     "type": "git",

@@ -22,13 +22,13 @@ function makeCtx() {
   };
 }
 
-function boot() {
+function boot(opts) {
   const root = path.join(__dirname, '..');
   const files = ['js/data.js', 'js/audio.js', 'js/art.js', 'js/fx.js', 'js/fighter.js', 'js/ai.js', 'js/battle.js', 'js/ui.js', 'js/game.js'];
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/<script src="[^"]+"><\/script>/g, '');
   const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://example.test/' });
   const { window } = dom;
-  const adapter = install(window);
+  const adapter = install(window, opts);
   stubAudio(window);
   const frame = pump(window);
   Object.defineProperty(window, 'innerWidth', { value: 960, writable: true, configurable: true });

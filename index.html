@@ -665,6 +665,24 @@
         .reward-value { font-size: 2rem; font-weight: 800; color: #ffd700; }
         .reward-label { font-size: 0.9rem; color: #888; }
         /* Loading */
+        .build-stamp {
+            margin-top: 1.1rem;
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            color: #5d6a80;
+            text-transform: uppercase;
+        }
+        .fatal-error {
+            position: fixed;
+            left: 0; right: 0; top: 0;
+            z-index: 999;
+            background: #7a1f1f;
+            color: #ffe9e9;
+            font: 600 13px/1.35 system-ui, sans-serif;
+            padding: 10px 12px calc(10px + env(safe-area-inset-top)) 12px;
+            padding-top: calc(10px + env(safe-area-inset-top));
+            text-align: center;
+        }
         #loading-screen {
             position: fixed;
             top: 0;
@@ -766,6 +784,30 @@
     </style>
 </head>
 <body>
+    <div id="fatal-error" class="fatal-error" hidden></div>
+    <script>
+      /* If anything throws before or during play, say so on screen instead of
+         leaving a black canvas the player cannot explain. */
+      (function () {
+        var box = null;
+        function report(what, msg) {
+          box = box || document.getElementById('fatal-error');
+          if (!box) return;
+          box.hidden = false;
+          box.textContent = what + ': ' + msg + '  (build 1.0.1 - please send this line)';
+        }
+        window.addEventListener('error', function (e) {
+          report('Error', (e && e.message) || 'unknown');
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          report('Error', (e && e.reason && (e.reason.message || e.reason)) || 'promise rejected');
+        });
+        // code that has to swallow an exception can still surface it visibly
+        window.reportGameError = function (what, err) {
+          report(what || 'Error', (err && err.message) || err || 'unknown');
+        };
+      })();
+    </script>
     <div id="loading-screen">
         <div class="screen-title">ONE PIECE FIGHT</div>
         <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
@@ -784,6 +826,7 @@
             <button class="btn btn-primary" onclick="showScreen('character-select')">START GAME</button>
             <button class="btn btn-secondary" onclick="showScreen('shop-screen')">SHOP & UPGRADES</button>
             <button class="btn btn-secondary" onclick="showScreen('codex-screen')">CODEX</button>
+            <div id="build-stamp" class="build-stamp">build 1.0.1</div>
         </div>
 
         <!-- Character Select -->
@@ -863,14 +906,14 @@
         </div>
     </div>
 
-    <script src="js/data.js"></script>
-    <script src="js/audio.js"></script>
-    <script src="js/art.js"></script>
-    <script src="js/fx.js"></script>
-    <script src="js/fighter.js"></script>
-    <script src="js/ai.js"></script>
-    <script src="js/battle.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/game.js"></script>
+    <script src="js/data.js?v=1.0.1"></script>
+    <script src="js/audio.js?v=1.0.1"></script>
+    <script src="js/art.js?v=1.0.1"></script>
+    <script src="js/fx.js?v=1.0.1"></script>
+    <script src="js/fighter.js?v=1.0.1"></script>
+    <script src="js/ai.js?v=1.0.1"></script>
+    <script src="js/battle.js?v=1.0.1"></script>
+    <script src="js/ui.js?v=1.0.1"></script>
+    <script src="js/game.js?v=1.0.1"></script>
 </body>
 </html>

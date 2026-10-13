@@ -396,6 +396,19 @@
   /* =====================================================================
      MENU RENDERING
      ===================================================================== */
+  /* Portraits are drawn onto <canvas> elements inside menu cards.  A failure
+     here used to vanish into an empty catch block, which is how you end up with
+     blank character cards and no clue why.  Fail loudly but keep the menu up. */
+  function portrait(canvas, kind, id) {
+    if (!canvas) return;
+    try {
+      OPF.Art.drawPortrait(canvas, kind, id);
+    } catch (err) {
+      console.error('portrait failed for ' + kind + ' ' + id, err);
+      if (window.reportGameError) window.reportGameError('Portrait ' + id, err);
+    }
+  }
+
   const Menus = {
     charGrid(game) {
       const grid = $('char-grid');
@@ -420,7 +433,7 @@
           Menus.charGrid(game);
         });
         grid.appendChild(card);
-        try { OPF.Art.drawPortrait(card.querySelector('canvas'), 'char', C.id); } catch (e) { }
+        portrait(card.querySelector('canvas'), 'char', C.id);
       });
     },
 
@@ -527,7 +540,7 @@
             </div>
           </div>`;
         list.appendChild(row);
-        try { OPF.Art.drawPortrait(row.querySelector('canvas'), 'char', C.id); } catch (e) { }
+        portrait(row.querySelector('canvas'), 'char', C.id);
       });
       list.querySelectorAll('.btn-upgrade').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -582,7 +595,7 @@
         setTimeout(() => {
           const cvs = list.querySelectorAll('canvas');
           const c = cvs[cvs.length - 1];
-          if (c && known) { try { OPF.Art.drawPortrait(c, 'enemy', id); } catch (e) { } }
+          if (c && known) portrait(c, 'enemy', id);
         }, 0);
       });
       sections.push('<h3 style="color:#ffd700;margin:14px 0 6px">BOSSES</h3>');

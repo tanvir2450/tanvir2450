@@ -108,8 +108,16 @@ js/ai.js            grunt AI profiles + boss move-pattern brain
 js/battle.js        World: waves, hit resolution, projectiles, hazards, camera, win/lose
 js/ui.js            HUD, virtual joystick, action buttons, menus, shop, codex
 js/game.js          canvas/view scaling, fixed-timestep loop, save data, screen flow
+tools/serve.js      zero-dependency static server used by `npm start`
 test/               headless test + render harnesses (see below)
 ```
+
+`npm start` serves the game on <http://localhost:8000> through `tools/serve.js`, which
+always sends `Cache-Control: no-store`. Plain `python3 -m http.server` sends no cache
+headers at all, so a browser will happily keep running the *previous* build of `js/*.js`
+for a while after a fix — which looks exactly like "the fix didn't work". Every script
+tag is also cache-busted (`js/game.js?v=1.0.1`) and the main menu shows a **build stamp**,
+so you can always tell which build you are actually running.
 
 Simulation runs on a **fixed 60 Hz timestep** with interpolated rendering; the view is a
 virtual unit space that adapts from portrait phones to desktop (the visible arena width is
@@ -140,6 +148,23 @@ npm run render            # renders pose/attack/portrait galleries + stage still
 
 All probes run headless (jsdom + @napi-rs/canvas) and each one exits by itself.
 
+`test/strictcanvas.js` is the browser-fidelity audit: it plays the whole game (every
+screen, all six fighters with all four specials, every stage, all fifteen bosses with
+their phase-2 patterns) through a context that rejects what Chrome and Safari reject —
+negative arc/ellipse/radial-gradient radii, non-finite gradients and transforms,
+out-of-range colour-stop offsets, unknown pattern repetitions and invalid colour
+strings. `@napi-rs/canvas` accepts all of those silently, and a real browser throwing
+mid-frame is a frozen game, so the audit exists to catch that class of bug headlessly.
+
+### If it misbehaves on a device
+
+The page reports its own errors: anything uncaught (or reported through
+`window.reportGameError`) is shown in a red banner at the top of the screen with the
+message and the build number. If something breaks on your phone, that banner is the
+thing to quote — a black canvas on its own is undiagnosable. Character-card portraits
+are drawn in a guarded helper for the same reason: a failure there is logged and
+surfaced instead of silently leaving blank cards.
+
 ### What the probes currently report
 
 | probe | expected result |
@@ -149,6 +174,7 @@ All probes run headless (jsdom + @napi-rs/canvas) and each one exits by itself.
 | `npm run levels` | ~28/30 sampled levels won, median win 30–34 s, no early-arc loss |
 | `npm run neverend` | 15/15 battles resolve — no fight can hang |
 | `npm run layout` | all 8 device sizes fit; controls never exceed 45 % of screen height |
+| `npm run strict` | no browser-fatal canvas calls (~85 s, deep audit) |
 
 The arc 4–5 bosses are deliberately a coin-grind gate: you clear the grunt levels
 around them, spend the coins on upgrades, then come back. Grunt scaling is kept
