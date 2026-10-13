@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0618" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Crossroads — Future Desert</title>
+<link rel="stylesheet" href="/css/style.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌵</text></svg>" />
+</head>
+<body>
+<div id="app">
+  <canvas id="game-canvas"></canvas>
+
+  <!-- ==================== MAIN MENU ==================== -->
+  <div id="screen-menu" class="screen active">
+    <div class="menu-glow"></div>
+    <header class="title-block">
+      <h1 class="game-title"><span>CROSSROADS</span></h1>
+      <p class="game-subtitle">— FUTURE DESERT —</p>
+      <p class="game-tagline">NEON DUNES · GLOWING GUNS · NO MERCY</p>
+    </header>
+
+    <section class="menu-panel">
+      <label class="field">
+        <span>CALLSIGN</span>
+        <input id="input-name" type="text" maxlength="16" placeholder="DesertRat" autocomplete="off" />
+      </label>
+
+      <button class="btn btn-primary" id="btn-practice">▶ PRACTICE — SOLO vs BOTS</button>
+
+      <div class="menu-row">
+        <button class="btn btn-accent" id="btn-quick">⚡ QUICK MATCH</button>
+        <button class="btn" id="btn-create">⌂ CREATE ROOM</button>
+      </div>
+
+      <div class="join-row">
+        <input id="input-code" type="text" maxlength="5" placeholder="ROOM CODE" autocomplete="off" />
+        <button class="btn btn-accent" id="btn-join">JOIN</button>
+      </div>
+
+      <button class="btn btn-ghost" id="btn-settings">⚙ SETTINGS</button>
+    </section>
+
+    <footer class="menu-foot">
+      <span id="net-status" class="net-pill">● CONNECTING…</span>
+      <span class="hint">TOUCH · MOUSE + WASD SUPPORTED</span>
+    </footer>
+  </div>
+
+  <!-- ==================== SETTINGS ==================== -->
+  <div id="screen-settings" class="screen">
+    <div class="settings-card">
+      <h2>SETTINGS</h2>
+      <label class="field">
+        <span>LOOK SENSITIVITY <b id="val-sens">1.0</b></span>
+        <input id="set-sens" type="range" min="0.3" max="2.5" step="0.1" value="1" />
+      </label>
+      <label class="field">
+        <span>MASTER VOLUME <b id="val-vol">0.7</b></span>
+        <input id="set-vol" type="range" min="0" max="1" step="0.05" value="0.7" />
+      </label>
+      <label class="field toggle">
+        <span>INVERT LOOK Y</span>
+        <input id="set-invert" type="checkbox" />
+      </label>
+      <label class="field toggle">
+        <span>GRAPHIC GLOW (BLOOM)</span>
+        <input id="set-bloom" type="checkbox" checked />
+      </label>
+      <label class="field">
+        <span>RENDER QUALITY</span>
+        <select id="set-quality">
+          <option value="1">HIGH</option>
+          <option value="0.75" selected>MEDIUM</option>
+          <option value="0.5">LOW / BATTERY</option>
+        </select>
+      </label>
+      <button class="btn btn-primary" id="btn-settings-back">BACK</button>
+    </div>
+  </div>
+
+  <!-- ==================== HUD ==================== -->
+  <div id="hud" class="hud">
+    <div class="hud-top">
+      <div class="hud-pill" id="hud-room">ROOM —</div>
+      <div class="hud-pill" id="hud-score">K 0 / D 0</div>
+      <div class="hud-pill" id="hud-ping">PING —</div>
+      <button class="hud-pill hud-btn" id="btn-leave">✕ LEAVE</button>
+    </div>
+
+    <div id="killfeed" class="killfeed"></div>
+
+    <div class="crosshair" id="crosshair">
+      <span class="ch-dot"></span>
+      <span class="ch-l"></span><span class="ch-r"></span>
+      <span class="ch-t"></span><span class="ch-b"></span>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="health-block">
+        <div class="health-label">ARMOR</div>
+        <div class="health-bar"><div id="health-fill" class="health-fill"></div></div>
+        <div class="health-num" id="health-num">100</div>
+      </div>
+      <div class="weapon-block">
+        <div class="weapon-name" id="weapon-name">AK ASSAULT RIFLE</div>
+        <div class="ammo"><span id="ammo-mag">30</span><span class="ammo-sep">/</span><span id="ammo-reserve">∞</span></div>
+      </div>
+    </div>
+
+    <!-- weapon wheel strip -->
+    <div id="weapon-strip" class="weapon-strip">
+      <button data-slot="0" class="wslot active">1<span>AK</span></button>
+      <button data-slot="1" class="wslot">2<span>SNIPER</span></button>
+      <button data-slot="2" class="wslot">3<span>PLASMA</span></button>
+      <button data-slot="3" class="wslot">4<span>MG</span></button>
+      <button data-slot="4" class="wslot">5<span>NADES</span></button>
+    </div>
+
+    <!-- touch controls -->
+    <div id="touch-ui" class="touch-ui">
+      <div id="stick-zone" class="stick-zone">
+        <div id="stick-base" class="stick-base"><div id="stick-nub" class="stick-nub"></div></div>
+      </div>
+      <div class="touch-buttons">
+        <button id="btn-fire" class="tbtn tbtn-fire">FIRE</button>
+        <button id="btn-ads" class="tbtn tbtn-ads">ADS</button>
+        <button id="btn-jump" class="tbtn tbtn-jump">JUMP</button>
+        <button id="btn-reload" class="tbtn tbtn-reload">RELOAD</button>
+        <button id="btn-nade" class="tbtn tbtn-nade">GRENADE</button>
+      </div>
+      <div id="look-zone" class="look-zone"></div>
+    </div>
+  </div>
+
+  <!-- ==================== SCOREBOARD ==================== -->
+  <div id="scoreboard" class="overlay-panel hidden">
+    <h3>SCOREBOARD</h3>
+    <table><thead><tr><th>PLAYER</th><th>K</th><th>D</th><th>HP</th></tr></thead>
+    <tbody id="score-rows"></tbody></table>
+  </div>
+
+  <!-- ==================== DEATH ==================== -->
+  <div id="death-overlay" class="overlay-panel death hidden">
+    <h2>ELIMINATED</h2>
+    <p id="death-by">by ??</p>
+    <p class="respawn-in">RESPAWN IN <b id="respawn-count">3</b></p>
+  </div>
+
+  <!-- ==================== MATCH END ==================== -->
+  <div id="end-overlay" class="overlay-panel end hidden">
+    <h2 id="end-title">VICTORY</h2>
+    <p id="end-detail"></p>
+    <button class="btn btn-primary" id="btn-end-menu">BACK TO MENU</button>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <div id="rotate-hint" class="rotate-hint">↻ ROTATE TO LANDSCAPE FOR BEST AIM</div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "/vendor/three.module.js" } }
+</script>
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>

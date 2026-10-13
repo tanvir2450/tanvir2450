@@ -1,0 +1,22 @@
+{
+  "name": "crossroads-future-desert",
+  "version": "1.0.0",
+  "description": "Crossroads—Future Desert: 3D multiplayer action shooter. Neon desert, glowing stickman avatars, mobile touch controls, online rooms + offline play.",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "three": "^0.160.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.2"
+  },
+  "license": "MIT"
+}
