@@ -203,9 +203,13 @@
       this.spBtns = [];
       C.specials.forEach((sp, i) => {
         const el = document.createElement('div');
-        el.className = 'abtn sp' + (level < sp.unlock ? ' locked' : '');
-        el.innerHTML = `<span class="ico">${['①', '②', '③', '④'][i]}</span><span class="cost">${sp.cost}MP</span>`;
-        el.title = sp.name;
+        const locked = level < sp.unlock;
+        el.className = 'abtn sp' + (locked ? ' locked' : '');
+        el.innerHTML = `<span class="ico">${['①', '②', '③', '④'][i]}</span><span class="cost">${locked ? 'Lv.' + sp.unlock : sp.cost + 'MP'}</span>`;
+        el.title = locked
+          ? `${sp.name} — unlock at character level ${sp.unlock}`
+          : `${sp.name} — ${sp.cost} mana`;
+        if (locked) el.setAttribute('aria-label', `${sp.name} locked until level ${sp.unlock}`);
         el.addEventListener('pointerdown', (e) => {
           e.preventDefault();
           el.classList.add('on');
@@ -311,7 +315,10 @@
 
       if (p && !p.dead) {
         p.moveInput(dirX, w);
-        if (dirY < -0.6 && p.onGround && !this._jumpLatch) { p.jump(); this._jumpLatch = true; }
+        // Only latch when the jump is actually taken.  p.jump() refuses while the
+        // fighter is stunned/hurt, and latching anyway meant a stick held up during
+        // a hit was silently swallowed until the player released and pushed again.
+        if (dirY < -0.6 && p.onGround && !this._jumpLatch && p.jump()) this._jumpLatch = true;
         if (dirY > 0.6 && p.onGround && !p.locked) { p.setState('crouch'); }
         else if (p.state === 'crouch' && dirY <= 0.6) p.setState('idle');
         if (dirY > -0.6) this._jumpLatch = false;

@@ -135,6 +135,7 @@ npm install jsdom @napi-rs/canvas
 
 npm test                  # node test/harness.js — the full regression suite
 npm run nav               # level-select routing, win/return flow, shop, pause, CSS
+npm run touch             # on-screen controls: joystick, action buttons, specials, items
 npm run layout            # control sizing: parses the CSS and checks it on 8 device sizes
 npm run bosses            # boss-clearance probe (a reasonably played, correctly levelled hero)
 npm run levels            # per-level fight length across 30 sampled levels
@@ -156,6 +157,12 @@ out-of-range colour-stop offsets, unknown pattern repetitions and invalid colour
 strings. `@napi-rs/canvas` accepts all of those silently, and a real browser throwing
 mid-frame is a frozen game, so the audit exists to catch that class of bug headlessly.
 
+`test/touch.js` drives the HUD the way a thumb does: it dispatches real pointer events at
+the joystick (push right/left/up/down, release, and a stick held up *through* a stun) and at
+every action, special and item button, then asserts the fighter actually moved, jumped,
+crouched, dashed, blocked, spent mana or healed. Nothing else in the suite proves the
+controls a phone user touches are wired to the fight.
+
 ### If it misbehaves on a device
 
 The page reports its own errors: anything uncaught (or reported through
@@ -173,6 +180,7 @@ surfaced instead of silently leaving blank cards.
 | `npm run bosses` | 11–12 / 15 bosses; all 9 arc 1–3 bosses fall at the level you'd naturally be |
 | `npm run levels` | ~28/30 sampled levels won, median win 30–34 s, no early-arc loss |
 | `npm run neverend` | 15/15 battles resolve — no fight can hang |
+| `npm run touch` | 26/26 — stick moves/crouches/jumps, every button drives the fight |
 | `npm run layout` | all 8 device sizes fit; controls never exceed 45 % of screen height |
 | `npm run strict` | no browser-fatal canvas calls (~85 s, deep audit) |
 

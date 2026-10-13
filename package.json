@@ -16,7 +16,8 @@
     "devices": "node test/devices.js",
     "render": "node test/render.js",
     "savecheck": "node test/savecheck.js",
-    "strict": "node test/strictcanvas.js"
+    "strict": "node test/strictcanvas.js",
+    "touch": "node test/touch.js"
   },
   "repository": {
     "type": "git",
