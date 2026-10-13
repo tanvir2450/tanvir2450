@@ -55,6 +55,10 @@ const isCli = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve
 if (isCli) {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const html = buildHtml(root);
+  // index.html is what the server serves; neon-chase.html is the friendly
+  // name to AirDrop/email to a phone. They are byte-identical.
   fs.writeFileSync(path.join(root, 'index.html'), html);
-  console.log(`built index.html — ${(Buffer.byteLength(html) / 1024).toFixed(1)} KB, self-contained (game + icon inlined)`);
+  fs.writeFileSync(path.join(root, 'neon-chase.html'), html);
+  const kb = (Buffer.byteLength(html) / 1024).toFixed(1);
+  console.log(`built index.html + neon-chase.html — ${kb} KB each, self-contained (net + game + icon inlined)`);
 }

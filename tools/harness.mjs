@@ -34,7 +34,9 @@ export function fakeElement(tag) {
       contains(c) { return this._s.has(c); },
     },
     getContext() { return fakeCtx(); },
+    click() { this.clicked = true; },
     appendChild(c) { this.children.push(c); return c; },
+    removeChild(c) { this.children = this.children.filter((x) => x !== c); return c; },
     addEventListener() {}, removeEventListener() {},
     getAttribute() { return null; }, setAttribute() {},
     getBoundingClientRect() { return { width: 660, height: 700, left: 0, top: 0 }; },
@@ -63,6 +65,25 @@ export function makeHarness(code, opts = {}) {
   const calls = opts.calls || new Map();
   const registry = new Map(ELEMENT_IDS.map((id) => [id, fakeElement(id === 'game' ? 'canvas' : 'div')]));
 
+  // Some browsers are hostile to file:// pages: storage throws, no clipboard,
+  // no WebSocket. `opts.file` reproduces that so "opens anywhere" is testable.
+  const strictStorage = !!opts.strictStorage;
+  const storage = {
+    _s: new Map(),
+    getItem(k) {
+      if (strictStorage) throw new Error('storage is disabled for this origin');
+      return this._s.has(k) ? this._s.get(k) : null;
+    },
+    setItem(k, v) {
+      if (strictStorage) throw new Error('storage is disabled for this origin');
+      this._s.set(k, String(v));
+    },
+    removeItem(k) {
+      if (strictStorage) throw new Error('storage is disabled for this origin');
+      this._s.delete(k);
+    },
+  };
+
   const timers = new Set();
   const sandbox = {
     console, Date, Math, JSON, Number, String, Array, Object, Boolean, Map, Set, Error, Promise, RegExp,
@@ -70,13 +91,13 @@ export function makeHarness(code, opts = {}) {
     btoa: (s) => Buffer.from(s, 'binary').toString('base64'),
     atob: (s) => Buffer.from(s, 'base64').toString('binary'),
     URL, URLSearchParams,
-    location: {
+    location: opts.location || {
       protocol: 'http:',
       host: 'test.local:3000',
       href: 'http://test.local:3000/',
       search: '',
     },
-    navigator: { clipboard: null, userAgent: 'node-harness' },
+    navigator: opts.navigator || { clipboard: null, userAgent: 'node-harness' },
     performance: { now: () => 0 },
     requestAnimationFrame: () => 0,
     cancelAnimationFrame: () => {},
@@ -84,12 +105,7 @@ export function makeHarness(code, opts = {}) {
     clearTimeout: (t) => { clearTimeout(t); timers.delete(t); },
     setInterval: (fn, ms) => { const t = setInterval(fn, ms); timers.add(t); return t; },
     clearInterval: (t) => { clearInterval(t); timers.delete(t); },
-    localStorage: {
-      _s: new Map(),
-      getItem(k) { return this._s.has(k) ? this._s.get(k) : null; },
-      setItem(k, v) { this._s.set(k, String(v)); },
-      removeItem(k) { this._s.delete(k); },
-    },
+    localStorage: storage,
     matchMedia: () => ({ matches: false }),
     devicePixelRatio: 1,
     addEventListener() {},
@@ -101,6 +117,7 @@ export function makeHarness(code, opts = {}) {
         el.getContext = () => fakeCtx(calls);
         return el;
       },
+      body: fakeElement('body'),
       addEventListener() {},
       hidden: false,
     },
@@ -109,6 +126,8 @@ export function makeHarness(code, opts = {}) {
   sandbox.window.addEventListener = () => {};
   sandbox.globalThis = sandbox;
   sandbox.self = sandbox;
+  if (opts.noWebSocket !== false) delete sandbox.WebSocket;   // default: none, as on file:// mobiles
+  if (opts.noClipboard !== false) sandbox.navigator.clipboard = null;
 
   const context = vm.createContext(sandbox);
   sources.forEach((src, i) => {

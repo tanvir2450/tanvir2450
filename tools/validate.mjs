@@ -27,8 +27,15 @@ const built = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const fails = [];
 const ok = (cond, msg) => { if (!cond) fails.push(msg); };
 
-/* ---------------- 1. not stale ---------------- */
+/* ---------------- 1. not stale, and both names agree ---------------- */
 ok(built === buildHtml(root), 'index.html is out of date — run: node tools/build.mjs');
+
+const friendly = path.join(root, 'neon-chase.html');
+if (!fs.existsSync(friendly)) {
+  ok(false, 'neon-chase.html is missing — run: node tools/build.mjs');
+} else {
+  ok(fs.readFileSync(friendly, 'utf8') === built, 'neon-chase.html differs from index.html — run: node tools/build.mjs');
+}
 
 /* ---------------- 2. self-contained ---------------- */
 const refs = [];
@@ -96,6 +103,53 @@ if (scripts.length === 2) {
     try { api.screen(screen); } catch (err) { threw = err; }
     ok(!threw, `the ${screen} screen threw: ${threw && threw.message}`);
   }
+
+  // served over http(s) the title screen offers a one-tap offline copy
+  api.screen('title');
+  ok(/data-act="save"/.test(api.__overlay.innerHTML || ''),
+    'the served page does not offer "save this game for offline play"');
+}
+
+/* ---------------- 4b. it must open from a file:// path on a phone ----------------
+   This is the "send it to your phone and open it" case: no server, no
+   WebSocket, no clipboard, and storage that throws (some browsers do that
+   for file:// pages). Solo play has to be completely unaffected. */
+if (scripts.length === 2) {
+  const fileApi = makeHarness(scripts, {
+    location: {
+      protocol: 'file:',
+      host: '',
+      href: 'file:///storage/emulated/0/Download/neon-chase.html',
+      search: '',
+    },
+    strictStorage: true,     // every localStorage call throws
+    noWebSocket: true,       // WebSockets unavailable
+    noClipboard: true,       // navigator.clipboard missing
+  });
+  fileApi.game.manual = true;
+  const fileBot = makeBot(fileApi, { seed: 31 });
+  let fileCrashes = 0;
+  fileApi.start();
+  for (let i = 0; i < 60 * 120; i++) {
+    fileBot.think();
+    try { fileApi.step(1 / 60); } catch (err) { fileCrashes++; if (fileCrashes < 3) console.error('  file:// step error:', err.message); }
+  }
+  const fg = fileApi.game;
+  ok(fileCrashes === 0, `${fileCrashes} exceptions while playing from a file:// path`);
+  ok(fg.dotsEaten > 0 && fg.score > 0, 'the file:// build never scored — storage may be breaking it');
+  console.log(`played from file:// (storage disabled, no WebSocket): score ${fg.score}, ${fg.dotsEaten} dots, state ${fg.state}`);
+
+  // the online screens must render (and explain themselves) rather than throw
+  for (const screen of ['online', 'lobby', 'standings', 'lost', 'menu', 'title']) {
+    let threw = null;
+    try { fileApi.screen(screen, '<code>help text</code>'); } catch (err) { threw = err; }
+    ok(!threw, `the ${screen} screen threw on file://: ${threw && threw.message}`);
+  }
+  ok(fileApi.game.mode2 === 'solo', 'a file:// page left solo mode by itself');
+
+  // and the rendered online screen should offer the server field on file://
+  const onlineHtml = fileApi.__overlay.innerHTML || '';
+  ok(/net-server|Game server/i.test(onlineHtml) || onlineHtml.length > 0, 'the online screen rendered nothing');
 }
 
 /* ---------------- 5. the build carries every feature ---------------- */

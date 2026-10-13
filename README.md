@@ -4,18 +4,30 @@ A neon maze-chase arcade game. You are the glowing disc; four hunters want you.
 Clear every dot on the board to advance — grab a power orb and the chase flips:
 for a few seconds, *you* hunt *them*.
 
-Solo play is a single file with no dependencies, no build step and no server:
-open `index.html` on a laptop, or send it to a phone and open it there.
-**Online play** puts up to four discs in the same maze for a race — that needs
-the little relay server in this repo (`server.js`, also zero-dependency).
+**The whole game is one file: `neon-chase.html`** (identical to `index.html`).
+No install, no build step, no server, no internet. Open it anywhere:
+
+| where | how |
+| --- | --- |
+| **PC / laptop** | double-click the file. Done. |
+| **Android** | send it to yourself (email, Drive, Telegram, USB) and tap it. Or serve the folder and tap **Save this game for offline play**. |
+| **iPhone / iPad** | put the file in iCloud Drive or Files, tap it to open in Safari, then Share → *Add to Home Screen* for an icon that launches offline. |
+| **Served over a network** | `node server.js`, then open the printed address on any device — this is also how you play together. |
+
+It is a single HTML file with the game, its icon and its sound engine inlined:
+180 KB, zero external requests, and it plays fine with storage and WebSockets
+blocked (both are common on phones). Progress and settings are saved when the
+browser allows it and silently skipped when it doesn't.
 
 ```
-# solo: just open the file (works offline, works on a phone)
-open index.html
+# solo: just open the file
+open neon-chase.html          # macOS
+xdg-open neon-chase.html      # Linux
+start neon-chase.html         # Windows
 
 # with online multiplayer
-node server.js            # then visit http://localhost:3000
-PORT=8080 node server.js  # different port
+node server.js                # then visit http://localhost:3000
+PORT=8080 node server.js      # different port
 HOST=0.0.0.0 node server.js   # also reachable from your LAN
 ```
 
@@ -119,7 +131,8 @@ used.
 ## Layout
 
 ```
-index.html              the built, self-contained game (open this)
+neon-chase.html         the built, self-contained game (open this) — same bytes as index.html
+index.html              the same file under the name a web server expects
 index.template.html     the shell it is built from (markup + CSS)
 src/game.js             maze, movement, hunter AI, rules, rendering, sound
 src/net.js              online session layer (rooms, protocol, smoothing)
@@ -182,9 +195,11 @@ What the suites actually check:
   chase is fair: progress is possible while hunted, nobody dies seconds after
   spawning, the hunters do catch people — and it measures hunter speed exactly
   (a 6.1 tile/s hunter travels 6.10 tiles in one second, and so on).
-- **validate** — `index.html` matches the sources (no stale build), has zero
-  external references, carries both inlined scripts in the right order, and the
-  inlined build boots, plays and can open every online screen.
+- **validate** — `index.html` and `neon-chase.html` are identical and match the
+  sources (no stale build), have zero external references, carry both inlined
+  scripts in the right order, and the build boots, plays and can open every
+  online screen. It also plays a full game as a **`file://` page with storage
+  disabled, no WebSocket and no clipboard** — the phone case.
 - **mp-test** — two and three clients over the in-memory relay: create, join by
   code, start, score, mid-race join, input relay, effect relay, race over, host
   departure, bogus codes.

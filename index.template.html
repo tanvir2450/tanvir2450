@@ -27,6 +27,10 @@
 
   * { box-sizing: border-box; }
 
+  /* phones: no double-tap zoom delay, no unexpected text inflation */
+  button, .btn, .icon-btn, .dpad button, input { touch-action: manipulation; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
   html, body {
     margin: 0;
     height: 100%;
@@ -34,7 +38,12 @@
     color: var(--ink);
     font-family: var(--font);
     overscroll-behavior: none;
+    width: 100%;
   }
+
+  /* A tap-to-play game should never scroll or pinch by accident. */
+  body { position: fixed; inset: 0; }
+  @supports (height: 100dvh) { body { position: static; inset: auto; height: 100dvh; } }
 
   body {
     display: flex;
@@ -53,8 +62,12 @@
     gap: 10px;
     width: 100%;
     max-width: 780px;
-    padding: 10px 12px 12px;
+    /* older browsers do not know dvh, so give them vh first */
+    min-height: 100vh;
     min-height: 100dvh;
+    /* keep clear of notches, rounded corners and home bars */
+    padding: calc(10px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+             calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
   }
 
   /* ---------------- HUD ---------------- */
@@ -154,7 +167,10 @@
     animation: fade 0.22s ease;
     overflow: auto;
   }
-  .overlay.show { display: grid; }
+  .overlay.show { display: flex; align-items: center; justify-content: center; }
+  .card { margin: auto; }   /* keeps the top reachable when the card overflows */
+  .overlay::-webkit-scrollbar { width: 6px; }
+  .overlay::-webkit-scrollbar-thumb { background: rgba(150, 180, 255, 0.25); border-radius: 3px; }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
   .card {
@@ -267,8 +283,8 @@
   /* ---------------- Touch controls ---------------- */
   .dpad {
     position: absolute;
-    bottom: 8px;
-    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    right: calc(8px + env(safe-area-inset-right));
     display: grid;
     grid-template-columns: repeat(3, min(52px, 13vw));
     grid-template-rows: repeat(3, min(52px, 13vw));
@@ -500,7 +516,7 @@
 
   <footer class="hint">
     <span class="desktop">Move with <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · <kbd>P</kbd> pause · <kbd>M</kbd> mute</span>
-    <span class="touch">Swipe anywhere to move · use the pad for finer control · tap <b>❚❚</b> for the menu</span>
+    <span class="touch">Swipe anywhere to move · pad for fine control · <b>❚❚</b> for the menu</span>
   </footer>
 </div>
 <!-- NET_SCRIPT -->

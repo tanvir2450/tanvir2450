@@ -239,7 +239,34 @@
   const Sound = (() => {
     let ac = null, master = null;
     let enabled = true;
+    let unlocked = false;
     let lastWaka = 0, wakaHigh = false, lastFright = 0;
+
+    /**
+     * Mobile browsers (iOS especially) only let audio start inside a user
+     * gesture, and our sounds fire from the animation loop. So we open the
+     * context on the first tap or key press and keep it alive from there.
+     */
+    function unlock() {
+      if (unlocked) return;
+      unlocked = true;
+      const a = node();
+      if (!a) return;
+      const kick = () => {
+        if (ac.state === 'suspended' && ac.resume) ac.resume().catch(() => {});
+      };
+      kick();
+      // a silent blip also wakes iOS up properly
+      try {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        gain.gain.value = 0.0001;
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start();
+        osc.stop(ac.currentTime + 0.02);
+      } catch (err) { /* ignore */ }
+    }
 
     function node() {
       if (!enabled) return null;
@@ -286,6 +313,7 @@
         if (master) master.gain.value = enabled ? 0.45 : 0;
         if (enabled) node();
       },
+      unlock,
       waka() {
         const t = game.time;
         if (t - lastWaka < 0.055) return;
@@ -2095,6 +2123,30 @@
     ui.net.className = 'badge ' + (game.netStatus === 'live' || game.netStatus === 'lobby' ? 'ok' : 'warn');
   }
 
+  /** Can the browser save this page as a file? (file:// pages already are one) */
+  function canSave() {
+    try {
+      return !!location.protocol && /^https?:$/.test(location.protocol);
+    } catch (err) {
+      return false;
+    }
+  }
+
+  /** Download the running page — one tap, and it plays offline forever. */
+  function saveCopy() {
+    try {
+      const a = document.createElement('a');
+      a.href = location.href;
+      a.download = 'neon-chase.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
   function escapeHtml(str) {
     return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => (
       { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
@@ -2138,6 +2190,7 @@
         <div class="actions">
           <button class="btn" data-act="start">Play solo</button>
           <button class="btn alt" data-act="online">Play online · 1–4 players</button>
+          ${canSave() ? '<button class="btn ghost tiny" data-act="save">Save this game for offline play</button>' : ''}
         </div>
       </div>`;
     } else if (kind === 'online') {
@@ -2357,6 +2410,9 @@
       startRace(game.state === 'levelclear' ? game.level + 1 : 1);
     }
     else if (act === 'start-solo') { startGame(); }
+    else if (act === 'save') {
+      showScreen('title', saveCopy() ? 'Saved. Open the file anywhere — it plays offline.' : 'Save the page instead: Share → Save to Files.');
+    }
     else if (act === 'leave') { leaveOnline(); }
   });
 
@@ -2379,6 +2435,12 @@
 
   ui.pause.addEventListener('click', togglePause);
   ui.sound.addEventListener('click', toggleSound);
+
+  // Wake the audio system on the first interaction — mobile browsers insist
+  // that sound starts inside a user gesture, and ours starts in the loop.
+  for (const evt of ['pointerdown', 'touchstart', 'keydown', 'click']) {
+    window.addEventListener(evt, () => Sound.unlock(), { once: true, passive: true });
+  }
 
   // D-pad (touch)
   dpad.addEventListener('pointerdown', (e) => {
@@ -2497,6 +2559,7 @@
     playerById,
     screen: showScreen,
     setRng,
+    unlockAudio: () => Sound.unlock(),
   };
 
   boot();
