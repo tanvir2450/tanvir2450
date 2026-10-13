@@ -44,10 +44,17 @@
             display: none;
             flex-direction: column;
             justify-content: center;
+            justify-content: safe center;   /* keeps tall content scrollable, not clipped */
             align-items: center;
             background: linear-gradient(135deg, #0d0d1a 0%, #1a1a2e 50%, #16213e 100%);
             z-index: 10;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding: calc(14px + env(safe-area-inset-top, 0px)) 0 calc(22px + env(safe-area-inset-bottom, 0px));
+            overscroll-behavior: contain;
         }
+        .screen > * { flex-shrink: 0; }
         .screen.active {
             display: flex;
         }
@@ -728,6 +735,20 @@
         }
         /* Responsive */
         @media (max-width: 480px) {
+            .screen-title { font-size: clamp(1.5rem, 7vw, 2.4rem); margin-bottom: 0.5rem; }
+            .screen-subtitle { font-size: 0.9rem; margin-bottom: 1rem; }
+            .grid4 { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 6px; padding: 0 10px; }
+            .lvl-btn { font-size: 13px; border-radius: 10px; }
+            .lvl-btn small { font-size: 8px; }
+            .char-grid { grid-template-columns: repeat(auto-fit, minmax(122px, 1fr)); gap: 0.6rem; padding: 0.6rem; }
+            .char-name { font-size: 0.95rem; }
+            .char-style { font-size: 0.66rem; }
+            .arc-card { padding: 1rem; margin-bottom: 0.6rem; }
+            .arc-name { font-size: 1.05rem; }
+            .currency-display { padding: 0.6rem; margin-bottom: 0.6rem; }
+            .currency-value { font-size: 1.15rem; }
+            .upgrade-item, .consumable-item { padding: 0.7rem; }
+            .btn { padding: 0.85rem 1.8rem; min-width: 170px; margin: 0.35rem; }
             .joystick-container { width: 120px; height: 120px; }
             .joystick-stick { width: 40px; height: 40px; }
             .action-btn { width: 60px; height: 60px; font-size: 1.2rem; }
@@ -735,6 +756,7 @@
             .stat-bar-container { min-width: 140px; }
         }
         @media (orientation: landscape) and (max-height: 500px) {
+            .screen { padding: 8px 0 12px; }
             .screen-title { font-size: 1.5rem; margin-bottom: 0.5rem; }
             .screen-subtitle { font-size: 0.9rem; margin-bottom: 1rem; }
             .btn { padding: 0.75rem 1.5rem; font-size: 0.9rem; min-width: 150px; }

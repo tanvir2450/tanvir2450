@@ -223,12 +223,8 @@
     closeResult() {
       $('result-overlay').classList.remove('active');
       if (this.battleArc !== undefined && this.world && this.world.result === 'victory') {
-        // return to level list of the same arc
-        const a = this.battleArc;
-        this.world = null;
-        $('hud').style.display = 'none';
-        OPF.Menus.levelList(this, a);
-        this.showScreen('level-select');
+        // return to the level grid of the same arc
+        this.openLevels(this.battleArc);
       } else {
         this.world = null;
         $('hud').style.display = 'none';
@@ -282,16 +278,35 @@
       OPF.Audio.sfx('ui');
     }
 
+    /* Open the level grid for one arc. Never route this through showScreen():
+       that always repaints the arc list and would wipe the level buttons. */
+    openLevels(arcIdx) {
+      this.hideScreens();
+      const el = $('level-select');
+      if (el) el.classList.add('active');
+      this.screen = 'level-select';
+      $('hud').style.display = 'none';
+      $('combat-log').innerHTML = '';
+      this.world = null;
+      OPF.Menus.levelList(this, arcIdx);
+      OPF.Audio.sfx('ui');
+    }
+
+    /* Back out of the level grid to the arc list. */
+    openArcs() {
+      this.hideScreens();
+      const el = $('level-select');
+      if (el) el.classList.add('active');
+      this.screen = 'level-select';
+      OPF.Menus.arcList(this);
+      OPF.Audio.sfx('back');
+    }
+
     startSelectedLevel() {
       // jump straight to the furthest unlocked arc
       let arc = 0;
       for (let a = 4; a >= 0; a--) if (this.arcUnlocked(a)) { arc = a; break; }
-      OPF.Menus.levelList(this, arc);
-      this.hideScreens();
-      $('level-select').classList.add('active');
-      this.screen = 'level-select';
-      $('hud').style.display = 'none';
-      OPF.Audio.sfx('ui');
+      this.openLevels(arc);
     }
 
     /* ----------------------------------------------------------- loop -- */
@@ -399,6 +414,7 @@
   global.togglePause = function () { GAME.togglePause(); };
   global.restartLevel = function () { GAME.restartLevel(); };
   global.exitToMenu = function () { GAME.exitToMenu(); };
+  global.openArcs = function () { GAME.openArcs(); };
   global.closeResult = function () { GAME.closeResult(); };
 
   let GAME;

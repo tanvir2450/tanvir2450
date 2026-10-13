@@ -418,8 +418,8 @@
   function levelScaling(arcIdx, level) {
     const arc = arcIdx;                    // 0..4
     const within = level / CONFIG.LEVELS_PER_ARC;   // 0..1
-    const enemyHp = (1 + arc * 0.26 + within * 0.30);
-    const enemyAtk = (1 + arc * 0.20 + within * 0.24);
+    const enemyHp = (1 + arc * 0.20 + within * 0.30);
+    const enemyAtk = (1 + arc * 0.15 + within * 0.24);
     return { hp: enemyHp, atk: enemyAtk, speed: 1 + arc * 0.045 + within * 0.05 };
   }
 
@@ -432,13 +432,13 @@
 
     // enemy count grows from 2 to 5 within each block of 9 levels
     const blockPos = ((level - 1) % 10) / 9;   // 0..1 inside the block
-    const baseCount = 2 + Math.floor(blockPos * 3);
+    const baseCount = Math.min(3, 2 + Math.floor(blockPos * 3));
     const waveCount = level >= 25 ? 3 : level >= 15 ? 2.5 : 2;
     const waves = [];
     // 2-3 waves of grunts
     const nWaves = level <= 5 ? 2 : level <= 15 ? 2 : 3;
     for (let w = 0; w < nWaves; w++) {
-      const count = Math.min(6, baseCount + (w === nWaves - 1 ? 1 : 0));
+      const count = Math.min(5, baseCount + (w === nWaves - 1 ? 1 : 0));
       const list = [];
       for (let i = 0; i < count; i++) {
         const r = rand01(seed, i + w * 31);

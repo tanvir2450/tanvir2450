@@ -6,10 +6,16 @@
   "scripts": {
     "start": "python3 -m http.server 8000",
     "test": "node test/harness.js",
+    "nav": "node test/navigation.js",
+    "layout": "node test/layout.js",
     "bosses": "node test/bosses.js",
+    "levels": "node test/levels.js",
+    "neverend": "node test/neverend.js",
     "balance": "node test/balance.js",
+    "dps": "node test/dps.js",
+    "devices": "node test/devices.js",
     "render": "node test/render.js",
-    "devices": "node test/devices.js"
+    "savecheck": "node test/savecheck.js"
   },
   "repository": {
     "type": "git",

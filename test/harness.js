@@ -132,6 +132,8 @@ step('economy', () => {
   log('  coins left:', GAME.save.coins, 'bag:', JSON.stringify(GAME.save.bag));
 });
 
+const { setCharLevel, fight, EXPECT } = require('./bot');
+
 const startLvl = (a, l, char) => {
   GAME.selectedChar = char || 'luffy';
   GAME.startBattle(a, l);
@@ -261,56 +263,38 @@ step('keyboard', () => {
 });
 
 step('boss levels across all arcs', () => {
-  let ok = 0;
+  // Arc 1-3 bosses must fall to a character at the level a player naturally has;
+  // the arc 4-5 bosses are the coin-grind gate, so only some are expected.
+  let ok = 0, early = 0;
   for (let a = 0; a < 5; a++) {
     for (const l of [10, 20, 30]) {
-      const w = startLvl(a, l, window.OPF.CHARACTERS[(a + l) % 6].id);
-      w.player.hp = 1e6; w.player.maxHp = 1e6; w.player.mana = 1e6; w.player.maxMana = 1e6;
-      let guard = 0;
-      while (!w.over && guard < 2400) {
-        const e = w.nearestEnemy(w.player);
-        if (e) {
-          const dx = e.x - w.player.x;
-          if (Math.abs(dx) > 70) w.player.x += Math.sign(dx) * 6;
-          if (guard % 8 === 0) w.playerAttack();
-          if (guard % 70 === 0) { w.player.mana = 1e6; w.playerSpecial(0); }
-        }
-        frame(1, 16.7);
-        guard++;
-      }
-      if (w.over && w.result === 'victory') ok++;
-      else errors.push(`boss arc${a + 1} lv${l} not won (over=${w.over} result=${w.result})`);
+      const char = window.OPF.CHARACTERS[(a + l) % 6].id;
+      const cl = setCharLevel(GAME, window.OPF, char, EXPECT[a]);
+      const r = fight(GAME, window.OPF, frame, a, l, char, 110);
+      if (r.won) { ok++; if (a < 3) early++; }
+      log(`  arc${a + 1} lv${l} ${char} charLv${cl} ${r.won ? 'WIN ' : 'LOSS'} ${r.secs}s hp ${r.hp}/${r.maxHp}`);
       window.closeResult();
     }
   }
-  log('  boss levels won:', ok + '/15');
+  log('  boss levels won:', ok + '/15', '(arcs 1-3:', early + '/9)');
+  if (early < 9) errors.push(`only ${early}/9 early-arc bosses cleared — that is the level a player has there`);
+  if (ok < 10) errors.push(`only ${ok}/15 bosses cleared, expected the grind gate to allow at least 10`);
 });
 
 step('sampled grunt levels', () => {
   let fails = 0, cleared = 0;
   for (let a = 0; a < 5; a++) {
     for (const l of [1, 5, 9, 15, 25, 29]) {
-      const w = startLvl(a, l, window.OPF.CHARACTERS[(a + l) % 6].id);
-      w.player.hp = 1e6; w.player.maxHp = 1e6; w.player.mana = 1e6; w.player.maxMana = 1e6;
-      let guard = 0;
-      while (!w.over && guard < 3000) {
-        const e = w.nearestEnemy(w.player);
-        if (e) {
-          const dx = e.x - w.player.x;
-          if (Math.abs(dx) > 70) w.player.x += Math.sign(dx) * 6;
-          if (guard % 8 === 0) w.playerAttack();
-          if (guard % 60 === 0) { w.player.mana = 1e6; w.playerSpecial(0); }
-        }
-        frame(1, 16.7);
-        guard++;
-      }
-      if (!w.over) fails++;
-      else cleared++;
+      const char = window.OPF.CHARACTERS[(a + l) % 6].id;
+      setCharLevel(GAME, window.OPF, char, EXPECT[a]);
+      const r = fight(GAME, window.OPF, frame, a, l, char, 90);
+      if (r.over) cleared++; else fails++;
+      if (r.won && r.secs > 80) log(`  slow clear: arc${a + 1} lv${l} took ${r.secs}s`);
       window.closeResult();
     }
   }
   log('  battles finished:', cleared, 'stuck:', fails);
-  if (fails) errors.push(fails + ' grunt levels did not resolve');
+  if (fails) errors.push(fails + ' grunt levels did not resolve — a level must always end');
 });
 
 step('save/load roundtrip', () => {
@@ -327,3 +311,6 @@ if (errors.length) {
   process.exit(1);
 }
 console.log('\nALL CHECKS PASSED — no runtime errors.');
+// jsdom keeps its timers alive, so a green run must exit explicitly or the
+// script would sit there forever after printing this.
+process.exit(0);

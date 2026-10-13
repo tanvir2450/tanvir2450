@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const { install, stubAudio, pump } = require('./canvasAdapter');
 
 function makeCtx() {
   const grad = { addColorStop() { } };
@@ -27,35 +28,16 @@ function boot() {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/<script src="[^"]+"><\/script>/g, '');
   const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://example.test/' });
   const { window } = dom;
-  window.HTMLCanvasElement.prototype.getContext = function () {
-    if (!this.__ctx) { this.__ctx = makeCtx(); this.__ctx.canvas = this; }
-    return this.__ctx;
-  };
-  class FakeParam { constructor() { this.value = 0; } setValueAtTime() { } linearRampToValueAtTime() { } exponentialRampToValueAtTime() { } cancelScheduledValues() { } }
-  class FakeNode { constructor() { this.gain = new FakeParam(); this.frequency = new FakeParam(); this.detune = new FakeParam(); this.Q = new FakeParam(); this.pan = new FakeParam(); } connect() { } disconnect() { } start() { } stop() { } }
-  window.AudioContext = class {
-    constructor() { this.currentTime = 0; this.sampleRate = 44100; this.state = 'running'; this.destination = new FakeNode(); }
-    resume() { } createGain() { return new FakeNode(); } createOscillator() { return new FakeNode(); }
-    createBiquadFilter() { return new FakeNode(); } createBufferSource() { return new FakeNode(); }
-    createStereoPanner() { return new FakeNode(); }
-    createBuffer(ch, len) { return { getChannelData: () => new Float32Array(len) }; }
-  };
-  const rafQueue = [];
-  window.requestAnimationFrame = (cb) => { rafQueue.push(cb); return rafQueue.length; };
-  window.cancelAnimationFrame = () => { };
-  if (!window.PointerEvent) window.PointerEvent = class extends window.MouseEvent { constructor(t, o = {}) { super(t, o); this.pointerId = o.pointerId || 1; this.pointerType = o.pointerType || 'touch'; } };
-  for (const f of files) window.eval(fs.readFileSync(path.join(root, f), 'utf8'));
+  const adapter = install(window);
+  stubAudio(window);
+  const frame = pump(window);
+  Object.defineProperty(window, 'innerWidth', { value: 960, writable: true, configurable: true });
+  Object.defineProperty(window, 'innerHeight', { value: 540, writable: true, configurable: true });
+  Object.defineProperty(window, 'devicePixelRatio', { value: 1, writable: true, configurable: true });
   const errors = [];
   window.addEventListener('error', e => errors.push('error: ' + e.message));
+  for (const f of files) window.eval(fs.readFileSync(path.join(root, f), 'utf8'));
   window.dispatchEvent(new window.Event('load'));
-  let t = 0;
-  function frame(n = 1, dt = 16.7) {
-    for (let i = 0; i < n; i++) {
-      t += dt;
-      const q = rafQueue.splice(0, rafQueue.length);
-      for (const cb of q) cb(t);
-    }
-  }
-  return { window, frame, GAME: window.GAME, dom, errors };
+  return { window, frame, GAME: window.GAME, dom, adapter, errors };
 }
 module.exports = { boot };

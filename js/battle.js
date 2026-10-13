@@ -158,7 +158,7 @@
         f.weapon = f.visual.weapon;
         f.id = idc++;
         f.ai = new OPF.AIController(f, {
-          aggression: 0.42 + this.arcIdx * 0.07 + this.level * 0.004,
+          aggression: Math.min(0.78, 0.42 + this.arcIdx * 0.06 + this.level * 0.004),
         });
         f.ai.profile = T.ai;
         f.xpValue = 8 + this.arcIdx * 6;
@@ -228,7 +228,7 @@
     // One place to tune how hard enemies hit the player.
     incomingMul(attacker) {
       if (!attacker || attacker.isPlayer) return 1;
-      return attacker.boss ? 0.30 : 0.45;
+      return attacker.boss ? 0.30 : 0.40;
     }
 
     overlap(a, b) {

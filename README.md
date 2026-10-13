@@ -125,15 +125,37 @@ real PNGs with `@napi-rs/canvas` so the procedural art can be inspected.
 ```bash
 npm install jsdom @napi-rs/canvas
 
-node test/harness.js      # boot, every screen, all 6 characters' specials, boss fights,
-                          # defeat path, touch controls, keyboard, sampled levels, save
-node test/bosses.js       # boss-clearance + fight-length balance probe
-node test/balance.js      # difficulty curve across the game (SAMPLE=full for all cases)
-node test/dps.js          # player damage output vs. boss HP / grunt clear times
-node test/savecheck.js    # canvas save()/restore() balance audit (catches visual corruption)
-node test/devices.js      # renders a battle at 4 device shapes -> test/out/device-*.png
-node test/render.js       # renders pose/attack/portrait galleries + stage stills
+npm test                  # node test/harness.js — the full regression suite
+npm run nav               # level-select routing, win/return flow, shop, pause, CSS
+npm run layout            # control sizing: parses the CSS and checks it on 8 device sizes
+npm run bosses            # boss-clearance probe (a reasonably played, correctly levelled hero)
+npm run levels            # per-level fight length across 30 sampled levels
+npm run neverend          # stress probe: hunts for battles that refuse to resolve
+npm run balance           # difficulty curve across the game (SAMPLE=full for all cases)
+npm run dps               # player damage output vs. boss HP / grunt clear times
+npm run savecheck         # canvas save()/restore() balance audit (catches visual corruption)
+npm run devices           # renders a battle at 5 device shapes -> test/out/device-*.png
+npm run render            # renders pose/attack/portrait galleries + stage stills
 ```
+
+All probes run headless (jsdom + @napi-rs/canvas) and each one exits by itself.
+
+### What the probes currently report
+
+| probe | expected result |
+| --- | --- |
+| `npm test` | `ALL CHECKS PASSED`, 30/30 sampled battles resolve, no runtime errors |
+| `npm run bosses` | 11–12 / 15 bosses; all 9 arc 1–3 bosses fall at the level you'd naturally be |
+| `npm run levels` | ~28/30 sampled levels won, median win 30–34 s, no early-arc loss |
+| `npm run neverend` | 15/15 battles resolve — no fight can hang |
+| `npm run layout` | all 8 device sizes fit; controls never exceed 45 % of screen height |
+
+The arc 4–5 bosses are deliberately a coin-grind gate: you clear the grunt levels
+around them, spend the coins on upgrades, then come back. Grunt scaling is kept
+*below* boss scaling so the levels between bosses never outweigh the boss itself —
+`test/levels.js` guards this: for every arc it compares the heaviest grunt level in
+each block against that block's boss and fails above 1.4x (the pre-fix arc 5 sat at
+1.45x; healthy blocks run 0.6-1.3x).
 
 `test/out/*.png` and `node_modules/` are gitignored build artefacts.
 
