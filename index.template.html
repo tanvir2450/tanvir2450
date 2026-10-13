@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#05060f" />
+<meta name="description" content="Neon Chase: a maze chase arcade game. Outrun four hunters, gobble the dots, grab a power orb and turn the tables." />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Neon Chase" />
+<title>Neon Chase — Maze Chase Arcade Game</title>
+<!-- ICONS -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%23ffe14d'/><path d='M16 16 L30 8 A14 14 0 0 1 30 24 Z' fill='%2305060f'/></svg>" />
+<style>
+  :root {
+    --bg: #05060f;
+    --ink: #e9ecff;
+    --dim: #8b93c4;
+    --accent: #46e0ff;
+    --accent-2: #ff5d8f;
+    --gold: #ffe14d;
+    --panel: rgba(14, 18, 40, 0.72);
+    --stroke: rgba(120, 160, 255, 0.18);
+    --font: ui-rounded, "SF Pro Rounded", "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    overscroll-behavior: none;
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    background:
+      radial-gradient(1200px 700px at 50% -10%, rgba(70, 224, 255, 0.10), transparent 60%),
+      radial-gradient(900px 600px at 100% 110%, rgba(255, 93, 143, 0.10), transparent 60%),
+      var(--bg);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 780px;
+    padding: 10px 12px 12px;
+    min-height: 100dvh;
+  }
+
+  /* ---------------- HUD ---------------- */
+  .hud {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--stroke);
+    border-radius: 16px;
+    background: var(--panel);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 62px;
+  }
+  .stat b {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat span {
+    font-size: 9px;
+    letter-spacing: 1.6px;
+    color: var(--dim);
+    text-transform: uppercase;
+  }
+  #score { color: var(--gold); text-shadow: 0 0 12px rgba(255, 225, 77, 0.45); }
+  #high { color: var(--accent); text-shadow: 0 0 12px rgba(70, 224, 255, 0.35); }
+
+  .spacer { flex: 1; }
+
+  #lives { display: flex; gap: 4px; align-items: center; height: 17px; }
+  #lives i {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: conic-gradient(from 20deg, var(--gold) 0 300deg, transparent 300deg 360deg);
+    box-shadow: 0 0 8px rgba(255, 225, 77, 0.5);
+  }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    border: 1px solid var(--stroke);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--ink);
+    font-size: 15px;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .icon-btn:hover { background: rgba(70, 224, 255, 0.14); border-color: rgba(70, 224, 255, 0.4); }
+  .icon-btn:active { transform: scale(0.93); }
+
+  /* ---------------- Stage ---------------- */
+  #stage {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    display: grid;
+    place-items: center;
+    min-height: 0;
+    touch-action: none;
+  }
+
+  canvas {
+    display: block;
+    border-radius: 18px;
+    background: #04050c;
+    box-shadow:
+      0 0 0 1px rgba(120, 160, 255, 0.14),
+      0 24px 60px rgba(0, 0, 0, 0.6),
+      0 0 90px rgba(70, 224, 255, 0.08);
+    image-rendering: auto;
+  }
+
+  /* ---------------- Overlay ---------------- */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 14px;
+    border-radius: 18px;
+    background: radial-gradient(600px 400px at 50% 30%, rgba(10, 14, 34, 0.72), rgba(4, 5, 12, 0.88));
+    backdrop-filter: blur(7px);
+    animation: fade 0.22s ease;
+    overflow: auto;
+  }
+  .overlay.show { display: grid; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  .card {
+    width: min(420px, 100%);
+    text-align: center;
+    padding: 22px 20px;
+    border: 1px solid var(--stroke);
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(22, 28, 58, 0.9), rgba(10, 13, 28, 0.92));
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    animation: pop 0.24s cubic-bezier(0.2, 1.3, 0.5, 1);
+  }
+  @keyframes pop { from { transform: scale(0.94) translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  .card h1 {
+    margin: 0 0 4px;
+    font-size: clamp(28px, 7vw, 40px);
+    letter-spacing: 2px;
+    font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(92deg, var(--gold), var(--accent-2) 55%, var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 18px rgba(255, 93, 143, 0.35));
+  }
+  .card .tagline {
+    margin: 0 0 16px;
+    font-size: 12.5px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .card h2 { margin: 0 0 6px; font-size: 25px; letter-spacing: 1.5px; }
+  .card p { margin: 0 0 16px; font-size: 13.5px; line-height: 1.55; color: #c3c9ee; }
+  .card p b { color: var(--gold); }
+
+  .roster {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 7px;
+    margin: 0 0 16px;
+  }
+  .roster span {
+    font-size: 10.5px;
+    letter-spacing: 0.9px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--stroke);
+    background: rgba(255, 255, 255, 0.04);
+    white-space: nowrap;
+  }
+  .roster i {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 5px;
+    border-radius: 50%;
+    vertical-align: middle;
+  }
+
+  .keys { display: flex; flex-direction: column; gap: 6px; margin: 0 0 16px; font-size: 12px; color: var(--dim); }
+  .keys div { display: flex; gap: 8px; align-items: center; justify-content: center; }
+  kbd {
+    font-family: var(--font);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 7px;
+    border-radius: 7px;
+    border: 1px solid rgba(150, 180, 255, 0.3);
+    border-bottom-width: 2px;
+    background: rgba(255, 255, 255, 0.07);
+    color: #dfe4ff;
+  }
+
+  .actions { display: flex; flex-direction: column; gap: 9px; align-items: center; }
+
+  .btn {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    padding: 13px 30px;
+    border-radius: 13px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: #08111f;
+    background: linear-gradient(180deg, #7ff0ff, #35c6ee 60%, #1aa5d6);
+    box-shadow: 0 8px 26px rgba(53, 198, 238, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    transition: transform 0.12s ease, filter 0.15s ease;
+  }
+  .btn:hover { filter: brightness(1.07); }
+  .btn:active { transform: translateY(1px) scale(0.985); }
+  .btn.ghost {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--stroke);
+    font-size: 12.5px;
+    padding: 10px 20px;
+  }
+
+  .final { display: flex; gap: 22px; justify-content: center; margin: 4px 0 18px; }
+  .final div { display: flex; flex-direction: column; gap: 2px; }
+  .final strong { font-size: 24px; font-variant-numeric: tabular-nums; }
+  .final small { font-size: 9.5px; letter-spacing: 1.4px; color: var(--dim); text-transform: uppercase; }
+
+  /* ---------------- Touch controls ---------------- */
+  .dpad {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, min(52px, 13vw));
+    grid-template-rows: repeat(3, min(52px, 13vw));
+    gap: 6px;
+    opacity: 0.85;
+    z-index: 3;
+  }
+  .dpad[hidden] { display: none; }
+  .dpad button {
+    border: 1px solid var(--stroke);
+    border-radius: 14px;
+    background: rgba(16, 22, 46, 0.66);
+    color: var(--accent);
+    font-size: 18px;
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+  }
+  .dpad button:active { background: rgba(70, 224, 255, 0.28); }
+  .dpad .u { grid-area: 1 / 2; }
+  .dpad .l { grid-area: 2 / 1; }
+  .dpad .r { grid-area: 2 / 3; }
+  .dpad .d { grid-area: 3 / 2; }
+
+  /* ---------------- Online: scoreboard chips ---------------- */
+  .badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    letter-spacing: 0.8px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--stroke);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--dim);
+    white-space: nowrap;
+  }
+  .badge b { color: var(--ink); letter-spacing: 1.4px; }
+  .badge em { font-style: normal; opacity: 0.75; }
+  .badge.ok { border-color: rgba(90, 240, 180, 0.4); color: #8ef7c0; }
+  .badge.ok b { color: #b6ffe0; }
+  .badge.warn { border-color: rgba(255, 170, 90, 0.45); color: #ffc98a; }
+
+  .scores {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+  .scores[hidden] { display: none; }
+  .scores .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--stroke);
+    background: rgba(12, 16, 36, 0.72);
+    opacity: 0.92;
+  }
+  .scores .chip.me { border-color: rgba(255, 225, 77, 0.5); box-shadow: 0 0 14px rgba(255, 225, 77, 0.14); }
+  .scores .chip.out { opacity: 0.45; text-decoration: line-through; }
+  .scores .chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .scores .chip b { font-weight: 700; letter-spacing: 0.3px; }
+  .scores .chip em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--gold); }
+  .scores .chip u { text-decoration: none; color: var(--accent); font-size: 10px; }
+  .scores .chip s { text-decoration: none; color: var(--gold); }
+
+  /* ---------------- Online: forms, lobby, standings ---------------- */
+  .card.wide { width: min(480px, 100%); }
+  .card .note {
+    font-size: 12px;
+    color: #c3c9ee;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--stroke);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin: 0 0 12px;
+  }
+  .card .note.warn { color: #ffd7a1; border-color: rgba(255, 180, 90, 0.35); }
+  .card .status { font-size: 11px; color: var(--dim); letter-spacing: 0.6px; margin: 0 0 12px; }
+
+  .field { display: block; text-align: left; margin: 0 0 12px; }
+  .field span {
+    display: block;
+    font-size: 9.5px;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 4px;
+  }
+  .field input, .joinrow input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 11px;
+    border: 1px solid rgba(150, 180, 255, 0.25);
+    background: rgba(6, 9, 22, 0.75);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 14px;
+    letter-spacing: 0.6px;
+    outline: none;
+  }
+  .field input:focus, .joinrow input:focus { border-color: rgba(70, 224, 255, 0.6); }
+  .field small { display: block; font-size: 10.5px; color: var(--dim); margin-top: 5px; line-height: 1.5; }
+  .field code { font-size: 10.5px; color: #bfe9ff; }
+
+  .joinrow { display: flex; gap: 8px; width: 100%; }
+  .joinrow input { text-align: center; text-transform: uppercase; letter-spacing: 6px; font-weight: 800; font-size: 18px; }
+  .btn.small { padding: 12px 18px; font-size: 13px; }
+  .btn.alt {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--stroke);
+    font-size: 12.5px;
+    padding: 11px 22px;
+  }
+  .btn.tiny { padding: 7px 12px; font-size: 10.5px; }
+
+  .codebox {
+    border: 1px dashed rgba(150, 180, 255, 0.35);
+    border-radius: 14px;
+    padding: 12px;
+    margin: 0 0 14px;
+  }
+  .codebox span { display: block; font-size: 9px; letter-spacing: 2px; color: var(--dim); }
+  .codebox b {
+    display: block;
+    font-size: 32px;
+    letter-spacing: 8px;
+    font-weight: 900;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(70, 224, 255, 0.5);
+    margin: 2px 0 8px;
+  }
+  .codebox .link {
+    font-size: 10px;
+    color: var(--dim);
+    word-break: break-all;
+    margin: 8px 0 0;
+    line-height: 1.5;
+  }
+
+  .lobbylist { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .lobbylist li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 11px;
+    border: 1px solid var(--stroke);
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .lobbylist i { width: 10px; height: 10px; border-radius: 50%; }
+  .lobbylist b { flex: 1; text-align: left; font-weight: 700; }
+  .lobbylist em { font-style: normal; font-size: 10px; color: var(--dim); letter-spacing: 1px; }
+  .lobbylist u { text-decoration: none; font-size: 9.5px; letter-spacing: 1.2px; color: var(--gold); }
+
+  .scoreboard { margin: 0 0 18px; }
+  .scoreboard h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    letter-spacing: 1.6px;
+    color: var(--gold);
+  }
+  .scoreboard .note { background: none; border: 0; padding: 0; color: var(--dim); font-size: 11px; }
+  .scoreboard ol { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .scoreboard li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 11px;
+    border-radius: 11px;
+    border: 1px solid var(--stroke);
+    background: rgba(255, 255, 255, 0.03);
+    font-size: 13px;
+  }
+  .scoreboard li.me { border-color: rgba(255, 225, 77, 0.45); background: rgba(255, 225, 77, 0.06); }
+  .scoreboard li.out { opacity: 0.55; }
+  .scoreboard .medal { width: 18px; font-size: 13px; }
+  .scoreboard li i { width: 10px; height: 10px; border-radius: 50%; }
+  .scoreboard li b { flex: 1; text-align: left; font-weight: 700; }
+  .scoreboard li em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--gold); font-weight: 800; }
+  .scoreboard li u { text-decoration: none; font-size: 10px; color: var(--dim); min-width: 66px; text-align: right; }
+
+  .hint {
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    color: #6b73a3;
+    text-align: center;
+    min-height: 14px;
+  }
+  .hint kbd { font-size: 10px; padding: 2px 5px; }
+  .hint .touch { display: none; }
+  @media (pointer: coarse) {
+    .hint .desktop { display: none; }
+    .hint .touch { display: inline; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="hud">
+    <div class="stat"><span>Score</span><b id="score">0</b></div>
+    <div class="stat"><span>Best</span><b id="high">0</b></div>
+    <div class="stat"><span>Level</span><b id="level">1</b></div>
+    <div class="spacer"></div>
+    <div class="stat" style="min-width:0"><span>Lives</span><div id="lives"></div></div>
+    <div id="net-badge" class="badge" hidden></div>
+    <button class="icon-btn" id="btn-sound" title="Sound on/off (M)" aria-label="Toggle sound">🔊</button>
+    <button class="icon-btn" id="btn-pause" title="Pause (P)" aria-label="Pause">❚❚</button>
+  </header>
+
+  <div id="scores" class="scores" hidden></div>
+
+  <main id="stage">
+    <canvas id="game" width="672" height="744" aria-label="Neon Chase game board"></canvas>
+    <div id="overlay" class="overlay"></div>
+    <div id="dpad" class="dpad" hidden>
+      <button class="u" data-dir="up" aria-label="Up">▲</button>
+      <button class="l" data-dir="left" aria-label="Left">◀</button>
+      <button class="r" data-dir="right" aria-label="Right">▶</button>
+      <button class="d" data-dir="down" aria-label="Down">▼</button>
+    </div>
+  </main>
+
+  <footer class="hint">
+    <span class="desktop">Move with <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> · <kbd>P</kbd> pause · <kbd>M</kbd> mute</span>
+    <span class="touch">Swipe anywhere to move · use the pad for finer control · tap <b>❚❚</b> for the menu</span>
+  </footer>
+</div>
+<!-- NET_SCRIPT -->
+<!-- GAME_SCRIPT -->
+</body>
+</html>
