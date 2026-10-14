@@ -1,0 +1,18 @@
+{
+  "$comment": "SECTION 9.12 - the circuits the game can load. Same data shape, so the physics/renderer/HUD do not care which one is up: C cycles, or pass ?track=<id>.",
+  "default": "apex",
+  "tracks": [
+    {
+      "id": "apex",
+      "file": "data/track.json",
+      "name": "Apex Loop",
+      "description": "The race circuit: 1125 m, a fast right hander, a hairpin with an oil slick on the exit and a wet section across the top. 32 gates, 3 surface patches."
+    },
+    {
+      "id": "grounds",
+      "file": "data/test-track.json",
+      "name": "Tuning Grounds",
+      "description": "The 9.12 test track: a 240 m start/finish straight, a fast right, two linked S-curves, a hairpin with a gravel apron, a back straight with a gravel crossing, and a long constant-radius oval turn with a wet section. Everything a car can be asked to do, in a known order."
+    }
+  ]
+}

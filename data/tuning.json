@@ -1,0 +1,456 @@
+{
+  "$comment": "SECTION 9 - global tuning constants. Every number the car simulator uses lives here (or per car in cars.json). No physics value is hardcoded in src/ - src/config.js fails loudly if a required constant is missing.",
+  "simulation": {
+    "physicsHz": 60,
+    "maxSubSteps": 8,
+    "maxSubStepTravelM": 0.35,
+    "maxSubStepSeconds": 0.0042,
+    "maxFrameTimeMs": 250,
+    "pxPerMeter": 32,
+    "gravity": 9.81,
+    "airDensity": 1.225,
+    "maxSpeedMs": 140,
+    "restVelocityEpsilon": 0.03,
+    "maxYawRateRadS": 8.0
+  },
+  "drivetrain": {
+    "gearCount": 5,
+    "shiftUpAtRedlinePct": 0.9,
+    "shiftDownAtRedlinePct": 0.44,
+    "shiftTorqueCutMs": 120,
+    "shiftTotalMs": 260,
+    "shiftCooldownMs": 140,
+    "rpmResponsePerSecond": 9.0,
+    "clutchLockRpmPct": 0.12,
+    "clutchLockIdlePct": 0.55,
+    "clutchLockRatePerSecond": 16.0,
+    "kickdownSpeedMs": 0.6,
+    "shiftBlipMs": 90,
+    "limiterBouncePct": 0.012,
+    "finalDriveEfficiency": 0.92,
+    "engineBrakeTorqueNm": 26,
+    "engineBrakePerRpm": 0.0035,
+    "engineBrakeWheelCutoffMs": 0.45,
+    "idleGovernorTorqueNm": 110,
+    "idleGovernorKp": 0.055,
+    "revLimiterRpmMargin": 120,
+    "revLimiterCutMs": 95,
+    "revLimiterRecoverMs": 60,
+    "wheelspinRpmBoostPct": 0.22,
+    "reverseEngageSpeedMs": 1.6,
+    "reverseEngageDwellMs": 260,
+    "reverseTopSpeedMs": 14,
+    "launchTorqueScale": 0.9,
+    "throttleBlipDownshift": 0.35
+  },
+  "tires": {
+    "model": "velocityScaled",
+    "velocityDampingPerSecond": 7.0,
+    "slipSpeedFloorMs": 2.0,
+    "slideGripRatio": 0.7,
+    "slideEnterUsage": 1.0,
+    "slideExitUsage": 0.82,
+    "slideGripRecoveryPerSecond": 2.6,
+    "slideGripDropPerSecond": 24.0,
+    "slidePressureSpan": 1.3,
+    "longitudinalGripRatio": 1.05,
+    "wheelspinTractionLoss": 0.1,
+    "frictionEllipse": 0.92,
+    "frictionEllipseFloor": 0.35,
+    "gripSmoothing": 30.0,
+    "axleBrakeBiasCutoff": 0.0,
+    "wheelspinGripLoss": 0.55
+  },
+  "chassis": {
+    "loadTransferFactor": 0.55,
+    "loadTransferSmoothing": 0.18,
+    "maxTransferFraction": 0.85,
+    "minAxleLoadN": 900,
+    "referenceLoadN": 6000,
+    "bodyRollVisualDeg": 3.4,
+    "bodyPitchVisualDeg": 1.6,
+    "bodyMotionSmoothing": 9.0,
+    "wheelVisualTravelM": 0.06
+  },
+  "aero": {
+    "dragScale": 1.0,
+    "rollingResistanceScale": 1.0,
+    "downforceScale": 1.0
+  },
+  "steering": {
+    "$comment": "SECTION 9.4 - steering input shaping + speed-sensitive lock",
+    "steerRateDegPerSec": 300.0,
+    "returnRateDegPerSec": 220.0,
+    "keyboardRampMs": 120.0,
+    "speedSteerCurve": [
+      {
+        "speedKph": 0,
+        "pct": 1.0
+      },
+      {
+        "speedKph": 60,
+        "pct": 0.8
+      },
+      {
+        "speedKph": 120,
+        "pct": 0.55
+      },
+      {
+        "speedKph": 200,
+        "pct": 0.34
+      },
+      {
+        "speedKph": 320,
+        "pct": 0.25
+      }
+    ],
+    "handbrakeSteerBoostDeg": 4.0,
+    "maxVisualSteerDeg": 28.0,
+    "assistSteerPct": 0.16,
+    "assistMaxSteerPct": 0.35,
+    "assistSpeedMs": 8.0,
+    "assistHoldSeconds": 0.85,
+    "assistDriftReleasePerSecond": 8.0,
+    "assistFullErrorDeg": 12.0,
+    "assistReleasePerSecond": 2.5,
+    "assistMinInput": 0.05,
+    "steerOvershootScale": 1.15
+  },
+  "brakes": {
+    "$comment": "SECTION 9.5 - front-biased brakes, ABS cap, handbrake lock",
+    "absEnabled": true,
+    "absUsageTarget": 0.96,
+    "handbrakeRearGripScale": 0.3,
+    "handbrakeRearBrakeScale": 0.55,
+    "handbrakeLockGripScale": 0.35,
+    "handbrakeLockSeconds": 0.4,
+    "handbrakeCooldownSeconds": 1.2,
+    "handbrakeLockBrakeScale": 1.0,
+    "brakeLightOnThreshold": 0.06
+  },
+  "balance": {
+    "gripInfluence": 0.18,
+    "comment": "axleGripMul = 1 - gripInfluence*balance (front) / 1 + gripInfluence*balance (rear). balance > 0 => rear loses grip first => oversteer."
+  },
+  "assists": {
+    "counterSteerAssistPct": 0.1,
+    "stabilityAssistEnabled": true,
+    "stabilityAssistStrength": 0.28,
+    "stabilityAssistActivationDeg": 78,
+    "stabilityAssistMaxYawRateRadS": 2.4,
+    "stabilityAssistMaxSpeedMs": 70,
+    "difficulty": {
+      "$comment": "9.4 - how much mobile steering help each level gives; harder levels help less",
+      "default": "normal",
+      "levels": [
+        {
+          "id": "casual",
+          "label": "Casual",
+          "assistPct": 1.0
+        },
+        {
+          "id": "normal",
+          "label": "Normal",
+          "assistPct": 0.68
+        },
+        {
+          "id": "pro",
+          "label": "Pro",
+          "assistPct": 0.38
+        },
+        {
+          "id": "master",
+          "label": "Master",
+          "assistPct": 0.0
+        }
+      ]
+    }
+  },
+  "world": {
+    "gridCellM": 8.0,
+    "gateSpacingM": 30.0,
+    "minGateWidthM": 4.0,
+    "gateResyncWindow": 4,
+    "minRadiusToWidth": 1.6
+  },
+  "collision": {
+    "wallRestitution": 0.28,
+    "skinM": 0.02,
+    "hardImpactSpeedMs": 4.5,
+    "wallFriction": 0.55,
+    "wallScrapeSpeedLoss": 0.16,
+    "impactSpeedLossPct": 0.45,
+    "impactYawImpulse": 0.5,
+    "maxImpactSpeedMs": 12,
+    "impactShakeScale": 0.6,
+    "$comment": "SECTION 9.8 - impulse resolution, hit-stop, scrape sparks",
+    "carRestitution": 0.22,
+    "carFriction": 0.42,
+    "carImpulseMaxSpeedMs": 14.0,
+    "hitStopMs": 55.0,
+    "hitStopMinImpactMs": 6.0,
+    "hitStopMaxMs": 90.0,
+    "hitStopImpactMs": 16.0,
+    "scrapeSparkSpeedMs": 3.2,
+    "sparksPerSecond": 55.0,
+    "hitStopShakeScale": 0.9
+  },
+  "skid": {
+    "markMinSpeedMs": 1.5,
+    "markUsageThreshold": 0.95,
+    "markWidthM": 0.24,
+    "markAlpha": 0.5,
+    "markFadeSeconds": 26,
+    "maxMarkSegments": 1400,
+    "smokeUsageThreshold": 1.0,
+    "dustUsageThreshold": 0.85,
+    "maxParticles": 420,
+    "wheelspinSpinBoostRadS": 22,
+    "wheelspinSpinRatePerSecond": 24
+  },
+  "drift": {
+    "$comment": "SECTION 9.6 - drift entry, scoring, clean exit reward",
+    "minSpeedMs": 6.0,
+    "minSlipAngleDeg": 15.0,
+    "scorePerSecondAtFullSlide": 520.0,
+    "comboWindowSeconds": 2.6,
+    "comboStep": 0.25,
+    "comboMax": 6.0,
+    "bankOnCleanSeconds": 1.2,
+    "spinOutYawRateRadS": 2.6,
+    "crashCancelWindowSeconds": 2.5,
+    "cleanExitBoostPct": 0.09,
+    "cleanExitMinPoints": 300.0,
+    "cleanExitBoostSeconds": 0.7,
+    "nitroPerPoint": 0.05,
+    "coinsPerPoint": 0.1,
+    "stylePerPoint": 1.0,
+    "fullSlideAngleSpanDeg": 40.0,
+    "fullScoreSpeedMs": 35.0,
+    "minSpeedFactor": 0.35,
+    "minBankSeconds": 0.35,
+    "cancelMinPoints": 5.0,
+    "spinMinSpeedMs": 3.0,
+    "comboRampSeconds": 2.0
+  },
+  "camera": {
+    "followLerpPerSecond": 7,
+    "speedZoomPct": 0.22,
+    "baseZoom": 0.85,
+    "minZoom": 0.5,
+    "maxZoom": 1.05,
+    "leadDistanceM": 0.28,
+    "shakeDecayPerSecond": 6
+  },
+  "audio": {
+    "screechUsageThreshold": 0.85,
+    "windStartSpeedMs": 12,
+    "windFullSpeedMs": 55
+  },
+  "debug": {
+    "showForcesByDefault": false,
+    "drawTelemetry": false,
+    "surfaceProbeRadiusM": 1.1
+  },
+  "nitro": {
+    "$comment": "SECTION 9.7 - nitro tank, boost, overheat",
+    "drainPerSecond": 30.0,
+    "minToActivatePct": 12.0,
+    "forceMultiplier": 1.4,
+    "topSpeedMultiplier": 1.2,
+    "steerAnglePct": 0.85,
+    "fillFromDriftPerPoint": 0.05,
+    "fillFromNearMissPct": 14.0,
+    "fillFromSlipstreamPerSecond": 11.0,
+    "fillFromSlipstreamMaxPct": 26.0,
+    "overheatLockoutMs": 1500.0,
+    "cameraZoomOutPct": 0.06,
+    "flameParticlesPerSecond": 90.0,
+    "speedLinesPerSecond": 26.0,
+    "audioLayerGain": 0.35
+  },
+  "damage": {
+    "$comment": "SECTION 9.9 - hit-zone damage, performance loss, repair",
+    "enabled": true,
+    "armorScale": 0.00022,
+    "minImpactSpeedMs": 2.5,
+    "minImpactEnergyJ": 900.0,
+    "zoneBias": {
+      "front": 1.0,
+      "rear": 0.9,
+      "left": 1.12,
+      "right": 1.12
+    },
+    "healthMax": 100.0,
+    "smokeAtHealthPct": 50.0,
+    "fireAtHealthPct": 20.0,
+    "wreckAtHealthPct": 0.0,
+    "frontEffectAtZonePct": 55.0,
+    "sideEffectAtZonePct": 45.0,
+    "rearEffectAtZonePct": 45.0,
+    "topSpeedLossPctPerDamage": 0.0045,
+    "topSpeedLossMaxPct": 0.35,
+    "steerPullMaxDeg": 3.2,
+    "accelLossPctPerDamage": 0.0032,
+    "accelLossMaxPct": 0.4,
+    "scrapeDamagePerSecond": 3.4,
+    "wreckSeconds": 2.6
+  },
+  "traffic": {
+    "$comment": "SECTION 9.10 - rivals, slipstream, near misses",
+    "enabled": true,
+    "count": 3,
+    "pacePct": [
+      0.74,
+      0.83,
+      0.9
+    ],
+    "lateralOffsetM": [
+      -2.4,
+      0.0,
+      2.4
+    ],
+    "spawnAheadM": 150.0,
+    "spawnSpreadM": 80.0,
+    "slipstreamRangeM": 34.0,
+    "slipstreamHalfAngleDeg": 24.0,
+    "slipstreamSpeedPct": 0.06,
+    "slipstreamMinSpeedMs": 12.0,
+    "nearMissDistanceM": 2.7,
+    "nearMissMinSpeedMs": 9.0,
+    "nearMissCooldownSeconds": 1.1,
+    "respawnSeconds": 6.0,
+    "contactDamageScale": 1.0,
+    "stuckSpeedMs": 1.5,
+    "respawnAheadM": 12.0,
+    "respawnSpeedMs": 8.0,
+    "respawnLockoutSeconds": 2.5,
+    "decorCooldownScale": 3.0
+  },
+  "economy": {
+    "$comment": "coins, star challenges and repair sinks",
+    "coinsPerLap": 45.0,
+    "coinsPerNearMiss": 9.0,
+    "coinsPerStylePoint": 0.05,
+    "coinsPerStar": 80.0,
+    "repairCostPerDamage": 7.0,
+    "repairCostMin": 40.0,
+    "freeQuickRepairs": 1.0,
+    "quickRepairHealthPct": 55.0,
+    "startCoins": 150.0,
+    "challenges": [
+      {
+        "id": "drift_1500",
+        "name": "Slide it",
+        "metric": "driftScore",
+        "target": 1500,
+        "reward": 80
+      },
+      {
+        "id": "lap_75",
+        "name": "Clean lap",
+        "metric": "bestLap",
+        "target": 75,
+        "reward": 80
+      },
+      {
+        "id": "speed_180",
+        "name": "Big numbers",
+        "metric": "topSpeedKph",
+        "target": 180,
+        "reward": 80
+      }
+    ]
+  },
+  "input": {
+    "$comment": "SECTION 9.4 - analog touch steering + tilt steering (values in real units)",
+    "padDeadZonePx": 6.0,
+    "padFullLockPx": 74.0,
+    "padResponseExponent": 0.85,
+    "padReleasePerSecond": 3.0,
+    "tiltEnabled": true,
+    "tiltInvert": false,
+    "tiltDeadZoneDeg": 3.0,
+    "tiltFullLockDeg": 22.0,
+    "tiltSmoothPerSecond": 8.0
+  },
+  "profile": {
+    "$comment": "SECTION 9.11 - defaults that turn a car handling profile into the internal model (converted once, at load). topSpeedRpmPct 1.0 means the quoted topSpeed is reached at the rev limiter in top gear.",
+    "yawInertiaFactor": 0.83,
+    "brakeTorquePerKgNm": 2.6,
+    "frontalAreaM2": 2.1,
+    "curveRpmPct": [
+      0.08,
+      0.3,
+      0.55,
+      0.78,
+      1.0
+    ],
+    "topSpeedRpmPct": 1.0,
+    "steerFalloffRefKph": 200.0,
+    "steerMinLockPct": 0.18,
+    "armorRatingBase": 4.0,
+    "powerToKw": 0.7355
+  },
+  "feel": {
+    "$comment": "SECTION 9.12 - the targets tools/bench.mjs holds every car to. Class windows are believability bounds; a profile car can also declare profile.targets (the tier it was authored to hit, e.g. the spec's ~6 s sport / ~9 s starter).",
+    "zeroTo100ByClass": {
+      "Starter": [
+        7.5,
+        11.0
+      ],
+      "Sport Compact": [
+        5.0,
+        8.0
+      ],
+      "Sport Coupe": [
+        3.5,
+        7.5
+      ],
+      "Muscle": [
+        4.0,
+        8.0
+      ],
+      "Rally": [
+        3.5,
+        8.0
+      ],
+      "Hyper": [
+        1.8,
+        5.0
+      ]
+    },
+    "topSpeedKphByClass": {
+      "Starter": [
+        140.0,
+        195.0
+      ],
+      "Sport Compact": [
+        190.0,
+        250.0
+      ],
+      "Sport Coupe": [
+        200.0,
+        300.0
+      ],
+      "Muscle": [
+        230.0,
+        295.0
+      ],
+      "Rally": [
+        215.0,
+        290.0
+      ],
+      "Hyper": [
+        290.0,
+        360.0
+      ]
+    },
+    "minLatG": 0.5,
+    "maxLatG": 1.75,
+    "minBrakeM": 25.0,
+    "maxBrakeM": 62.0,
+    "powerOversteerMinSlipDeg": 8.0,
+    "controllableMaxSlipDeg": 25.0
+  }
+}

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Apex 2D - Section 9: Car Mechanics</title>
+    <meta name="description" content="Fixed 60 Hz 2D car physics playground: torque-curve drivetrain, slip-based tire model, per-surface grip." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game"></canvas>
+
+      <!-- 9.4: drag anywhere on the glass to steer, analog. Only shown on
+           touch devices (styles.css) and sits under the HUD buttons. -->
+      <div id="touch-steer-pad" aria-hidden="true"></div>
+
+      <div id="hud">
+        <div class="panel panel-dash">
+          <canvas id="tach"></canvas>
+          <div class="dash-readout">
+            <div class="gear-row">
+              <span id="gear">1</span>
+              <span class="gear-label">GEAR</span>
+            </div>
+            <div class="speed-row">
+              <span id="speed">0</span>
+              <span class="speed-unit">km/h</span>
+            </div>
+            <div class="sub-row">
+              <span id="rpm-digital">900</span><span class="unit">rpm</span>
+              <span class="sep">|</span>
+              <span id="power">0 kW</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel-timing">
+          <div class="row"><span class="label">LAP</span><span class="value" id="lap-time">0.000s</span></div>
+          <div class="row"><span class="label">BEST</span><span class="value accent" id="best-lap">--:--.---</span></div>
+          <div class="row" id="last-lap-row"><span class="label">LAST</span><span class="value" id="last-lap">--:--.---</span></div>
+          <div class="row small"><span class="label">STATE</span><span class="value" id="lap-count">LAP 1</span></div>
+        </div>
+
+        <div class="panel panel-nitro">
+          <div class="nitro-row">
+            <span class="label">NITRO</span>
+            <div class="bar nitro"><i id="nitro-fill"></i></div>
+            <span class="nitro-key">N</span>
+          </div>
+          <div class="nitro-state" id="nitro-state"></div>
+        </div>
+
+        <div class="panel panel-grip">
+          <div class="grip-row">
+            <span class="label">FRONT</span>
+            <div class="bar"><i id="grip-front"></i></div>
+          </div>
+          <div class="grip-row">
+            <span class="label">REAR</span>
+            <div class="bar"><i id="grip-rear"></i></div>
+          </div>
+          <div class="surface-row">
+            <span id="surface" data-surface="asphalt">ASPHALT (DRY)</span>
+            <span id="wheelspin" class="wheelspin-dot" title="rear wheelspin">WHEELSPIN</span>
+          </div>
+        </div>
+
+        <div class="panel panel-damage">
+          <div class="damage-row">
+            <span class="label">HEALTH</span>
+            <div class="bar health"><i id="health-fill"></i></div>
+            <span class="health-value" id="health-value">100</span>
+          </div>
+          <div class="zones">
+            <span class="zone" id="zone-front" title="front">F</span>
+            <span class="zone" id="zone-rear" title="rear">R</span>
+            <span class="zone" id="zone-left" title="left side">L</span>
+            <span class="zone" id="zone-right" title="right side">R</span>
+            <span class="zone-note" id="damage-note"></span>
+          </div>
+        </div>
+
+        <div class="panel panel-drift" id="drift-panel">
+          <div class="drift-head">DRIFT</div>
+          <div class="drift-total"><span id="drift-score">0</span><span id="drift-combo">x1.00</span></div>
+          <div class="drift-pending" id="drift-pending"></div>
+        </div>
+
+        <div class="panel panel-car">
+          <div class="car-title"><span id="car-name">Kalos GT</span><span id="car-class">Sport Compact</span></div>
+          <div class="car-buttons" id="car-buttons"></div>
+          <div class="car-meta"><span id="assists">ON</span><span id="mute">SOUND ON</span><span id="debug-note"></span></div>
+          <div class="wallet">
+            <span class="coins" id="coins">0</span><span class="unit">coins</span>
+            <span class="stars" id="stars">0/3</span>
+            <span class="zone-note" id="challenge-note"></span>
+          </div>
+        </div>
+
+        <canvas id="minimap"></canvas>
+
+        <div id="message"></div>
+        <div id="close-call"></div>
+
+        <div class="touch-controls">
+          <div class="touch-left">
+            <button class="touch-btn" id="touch-left-btn" aria-label="steer left">◀</button>
+            <button class="touch-btn" id="touch-right-btn" aria-label="steer right">▶</button>
+            <button class="touch-btn small" id="touch-tilt" aria-label="tilt steering on / off">TILT</button>
+          </div>
+          <div class="touch-right">
+            <button class="touch-btn" id="touch-brake" aria-label="brake / reverse">BRAKE</button>
+            <button class="touch-btn wide" id="touch-throttle" aria-label="throttle">GO</button>
+            <button class="touch-btn" id="touch-nitro" aria-label="nitro">NOS</button>
+            <button class="touch-btn" id="touch-handbrake" aria-label="handbrake">HB</button>
+          </div>
+        </div>
+
+        <div class="hint">
+          <b>W/S</b> drive · <b>A/D</b> steer · <b>Space</b> handbrake · <b>N</b> nitro · <b>F</b> repair · <b>R</b> reset · <b>T</b> assists · <b>Y</b> difficulty · <b>K</b> tuner · <b>C</b> circuit · <b>1-5</b> car · <b>O</b> demo · <b>V</b> camera · <b>M</b> mute · <b>G</b> telemetry
+        </div>
+      </div>
+
+      <!-- 9.12: the tuning panel. Built by src/debug.js, shown with K. -->
+      <aside id="tuner" aria-label="tuning panel"></aside>
+
+      <div id="loading">
+        <div class="loading-inner">
+          <h1>APEX 2D</h1>
+          <p>Section 9 · Car Mechanics</p>
+          <div class="spinner"></div>
+          <p class="small" id="loading-note">loading data/cars.json …</p>
+        </div>
+      </div>
+
+      <div id="error" hidden></div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>
