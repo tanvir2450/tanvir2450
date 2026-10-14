@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
+  <!--
+    Starter car — top-down, facing RIGHT (+X). 0 degrees = east, the Phaser/Arcade convention,
+    so sprite.rotation can be used directly as the heading.
+    Canvas 512x256, car centred on (256,128). Palette: neon-noir (hot magenta body, cyan accents).
+    Dark parts (tyres, wing, glass) get a light edge so they stay readable on dark scenery.
+    Rebuild the PNG with:  npm run art
+  -->
+  <defs>
+    <path id="bodyShape" d="M 46 106 C 47 94.3 47 87.7 52 80 C 57 72.3 66 65.2 76 60 C 86 54.8 99.7 51.2 112 49 C 124.3 46.8 137 46.3 150 47 C 163 47.7 176.7 51.2 190 53 C 203.3 54.8 216.7 57 230 58 C 243.3 59 256.7 59.5 270 59 C 283.3 58.5 296.7 56.8 310 55 C 323.3 53.2 336.3 49.7 350 48 C 363.7 46.3 378.7 44.2 392 45 C 405.3 45.8 419 49 430 53 C 441 57 450 62.3 458 69 C 466 75.7 473.3 85.2 478 93 C 482.7 100.8 484.7 108.2 486 116 C 487.3 123.8 487.3 132.2 486 140 C 484.7 147.8 482.7 155.2 478 163 C 473.3 170.8 466 180.3 458 187 C 450 193.7 441 199 430 203 C 419 207 405.3 210.2 392 211 C 378.7 211.8 363.7 209.7 350 208 C 336.3 206.3 323.3 202.8 310 201 C 296.7 199.2 283.3 197.5 270 197 C 256.7 196.5 243.3 197 230 198 C 216.7 199 203.3 201.2 190 203 C 176.7 204.8 163 208.3 150 209 C 137 209.7 124.3 209.2 112 207 C 99.7 204.8 86 201.2 76 196 C 66 190.8 57 183.7 52 176 C 47 168.3 47 161.7 46 150 C 45 138.3 45 117.7 46 106 Z"/>
+    <clipPath id="bodyClip"><use href="#bodyShape"/></clipPath>
+
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff7ab8"/>
+      <stop offset="0.42" stop-color="#ff2e88"/>
+      <stop offset="1" stop-color="#9c0e55"/>
+    </linearGradient>
+    <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff5ca6"/>
+      <stop offset="1" stop-color="#c3186a"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22356b"/>
+      <stop offset="1" stop-color="#0a1028"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="0.38" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="lampGlow">
+      <stop offset="0" stop-color="#fff3b8" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#fff3b8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="tailGlow">
+      <stop offset="0" stop-color="#ff2a4d" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#ff2a4d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Wheels (drawn first so the body overlaps their inner half) -->
+  <g fill="#121833" stroke="#4a5aa0" stroke-opacity="0.9" stroke-width="2">
+    <rect x="93"  y="29"  width="62" height="29" rx="10"/>
+    <rect x="361" y="29"  width="62" height="29" rx="10"/>
+    <rect x="93"  y="198" width="62" height="29" rx="10"/>
+    <rect x="361" y="198" width="62" height="29" rx="10"/>
+  </g>
+  <g fill="#2f3b70">
+    <rect x="103" y="33"  width="42" height="4" rx="2"/>
+    <rect x="371" y="33"  width="42" height="4" rx="2"/>
+    <rect x="103" y="219" width="42" height="4" rx="2"/>
+    <rect x="371" y="219" width="42" height="4" rx="2"/>
+  </g>
+
+  <!-- Body -->
+  <use href="#bodyShape" fill="url(#body)"/>
+
+  <g clip-path="url(#bodyClip)">
+    <!-- soft top-light sheen + hood specular -->
+    <rect x="30" y="36" width="470" height="184" fill="url(#sheen)"/>
+    <ellipse cx="424" cy="88" rx="44" ry="8" fill="#ffffff" fill-opacity="0.2" transform="rotate(16 424 88)"/>
+    <ellipse cx="424" cy="168" rx="44" ry="8" fill="#000000" fill-opacity="0.12" transform="rotate(-16 424 168)"/>
+
+    <!-- hood vents -->
+    <path d="M 384 96 L 426 106 L 426 113 L 384 103 Z" fill="#5c0830" fill-opacity="0.75"/>
+    <path d="M 384 160 L 426 150 L 426 143 L 384 153 Z" fill="#5c0830" fill-opacity="0.75"/>
+
+    <!-- racing stripe: trunk, roof, hood -->
+    <g fill="#29e8ff">
+      <rect x="40"  y="120" width="142" height="16"/>
+      <rect x="218" y="120" width="100" height="16"/>
+      <rect x="350" y="120" width="140" height="16"/>
+    </g>
+    <g fill="#ffffff" fill-opacity="0.55">
+      <rect x="40"  y="112" width="142" height="3"/>
+      <rect x="40"  y="141" width="142" height="3"/>
+      <rect x="218" y="112" width="100" height="3"/>
+      <rect x="218" y="141" width="100" height="3"/>
+      <rect x="350" y="112" width="140" height="3"/>
+      <rect x="350" y="141" width="140" height="3"/>
+    </g>
+  </g>
+
+  <!-- Cabin: glass base, roof panel on top -->
+  <path d="M 178 98 C 178 90 184 84 194 82 L 294 72 C 312 70 326 74 336 82 L 352 96 L 352 160 L 336 174 C 326 182 312 186 294 184 L 194 174 C 184 172 178 166 178 158 Z" fill="url(#glass)" stroke="#6f86d6" stroke-opacity="0.75" stroke-width="2" stroke-linejoin="round"/>
+  <rect x="220" y="75" width="96" height="106" rx="16" fill="url(#roof)"/>
+  <rect x="220" y="120" width="96" height="16" fill="#29e8ff"/>
+  <g fill="#ffffff" fill-opacity="0.55">
+    <rect x="220" y="112" width="96" height="3"/>
+    <rect x="220" y="141" width="96" height="3"/>
+  </g>
+  <!-- glass reflections -->
+  <path d="M 326 79 L 344 89 L 344 99 L 318 87 Z" fill="#9ff3ff" fill-opacity="0.35"/>
+  <path d="M 190 91 L 212 87 L 212 93 L 188 99 Z" fill="#9ff3ff" fill-opacity="0.22"/>
+
+  <!-- Side mirrors -->
+  <g fill="#0c1230" stroke="#29e8ff" stroke-opacity="0.8" stroke-width="1.5">
+    <ellipse cx="330" cy="64"  rx="13" ry="6.5" transform="rotate(-22 330 64)"/>
+    <ellipse cx="330" cy="192" rx="13" ry="6.5" transform="rotate(22 330 192)"/>
+  </g>
+
+  <!-- Headlights -->
+  <ellipse cx="452" cy="82"  rx="30" ry="26" fill="url(#lampGlow)"/>
+  <ellipse cx="452" cy="174" rx="30" ry="26" fill="url(#lampGlow)"/>
+  <rect x="-17" y="-5.5" width="34" height="11" rx="5.5" fill="#fff6c8" transform="translate(450 80) rotate(42)"/>
+  <rect x="-17" y="-5.5" width="34" height="11" rx="5.5" fill="#fff6c8" transform="translate(450 176) rotate(-42)"/>
+
+  <!-- Taillights -->
+  <ellipse cx="66" cy="86"  rx="22" ry="24" fill="url(#tailGlow)"/>
+  <ellipse cx="66" cy="170" rx="22" ry="24" fill="url(#tailGlow)"/>
+  <rect x="-15" y="-5" width="30" height="10" rx="5" fill="#ff2a4d" transform="translate(66 86) rotate(-58)"/>
+  <rect x="-15" y="-5" width="30" height="10" rx="5" fill="#ff2a4d" transform="translate(66 170) rotate(58)"/>
+
+  <!-- Rear spoiler -->
+  <rect x="24" y="64" width="24" height="128" rx="9" fill="#141b3a" stroke="#4a5aa0" stroke-opacity="0.9" stroke-width="2"/>
+  <rect x="27" y="70" width="5" height="116" rx="2.5" fill="#29e8ff"/>
+
+  <!-- Neon rim light around the body -->
+  <use href="#bodyShape" fill="none" stroke="#9ff3ff" stroke-opacity="0.55" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>

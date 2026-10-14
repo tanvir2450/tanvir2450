@@ -1,0 +1,30 @@
+# Cache + security headers for Cloudflare Pages and Netlify (same file format).
+# Vite copies this file from public/ into dist/. Vercel uses vercel.json instead.
+#
+# Why this cache split is safe:
+#  - /bundle/* has content hashes in the file names, so a new deploy means new names.
+#  - /assets/* and /data/* are requested with ?v=<build id> (src/core/assets.ts), so a new
+#    deploy means new URLs.
+#  - The HTML page is the only file with a fixed URL, so it must always be revalidated.
+#
+# (No default Cache-Control on /*: Cloudflare and Netlify merge matching rules, and a second
+#  Cache-Control there would be appended to the ones above instead of replaced.)
+
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/bundle/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/data/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
