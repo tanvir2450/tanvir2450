@@ -11,9 +11,13 @@
     "bench": "node tools/bench.mjs",
     "laps": "node tools/laps.mjs",
     "track": "node tools/build-track.mjs",
-    "track:preview": "node tools/render-track.mjs"
+    "track:preview": "node tools/render-track.mjs",
+    "shot": "node tools/shot.mjs"
   },
   "engines": {
     "node": ">=18"
+  },
+  "optionalDependencies": {
+    "@napi-rs/canvas": "^0.1.80"
   }
 }

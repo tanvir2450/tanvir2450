@@ -24,6 +24,7 @@ npm run bench      # measures every car: accel, braking, cornering, drift, limit
 npm run laps       # the autopilot laps every car (--track grounds, --car falcon)
 npm run track      # rebuilds data/track.json + data/test-track.json
 npm run track:preview   # draws a track to a PNG so you can see the layout
+npm run shot       # renders real game frames to a PNG (optional @napi-rs/canvas)
 ```
 
 ## Controls
@@ -500,6 +501,9 @@ promised: delete a key from the JSON and the app tells you which one.
 * `tools/render-track.mjs` — a track to PNG, for checking a layout by eye.
 * `tools/laps.mjs` — the autopilot laps every car on any circuit, with lap times,
   off-track seconds and a surface histogram.
+* `tools/shot.mjs` — renders real frames to a PNG headlessly (the test DOM's 2D
+  context is a fake, so this swaps in a real one). Handy for checking a visual
+  change without a browser; needs the optional `@napi-rs/canvas`.
 * `tests/tuning.test.js` — the 9.11 conversion contract (profile in, model out,
   including that the conversion constants are data) and the 9.12 tools (the panel
   edits live data, a car rebuild keeps your race, the circuit switch keeps your
