@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64">
+  <!-- Rear wheels are in this layer; steerable front wheels are runtime sprites. -->
+  <rect x="19" y="4" width="20" height="12" rx="3" fill="#050b12" stroke="#748b9c" stroke-width="1.5"/>
+  <rect x="19" y="48" width="20" height="12" rx="3" fill="#050b12" stroke="#748b9c" stroke-width="1.5"/>
+  <path d="M23 6v8M23 50v8M35 6v8M35 50v8" stroke="#3a5260" stroke-width="1"/>
+  <path d="M94 8h20M94 56h20" stroke="#14202b" stroke-width="4" stroke-linecap="round"/>
+</svg>

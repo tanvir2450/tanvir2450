@@ -1,5 +1,5 @@
-import { clamp } from './sim/math';
-import type { DriveInput } from './sim/types';
+import { clamp } from '../physics/math';
+import type { DriveInput } from '../physics/types';
 
 export class Controls {
   private keys = new Set<string>();

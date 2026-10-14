@@ -1,5 +1,5 @@
-import { lerp, right } from './sim/math';
-import type { Track } from './sim/track';
+import { lerp, right } from '../physics/math';
+import type { Track } from '../physics/track';
 
 // Draw a static world into 1024 px camera-local Canvas textures. Unlike one
 // giant Phaser.Graphics path, only visible tiles are uploaded / drawn, and

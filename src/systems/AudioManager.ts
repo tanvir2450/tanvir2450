@@ -1,4 +1,4 @@
-import type { CarState, SimEvent, Tuning } from './sim/types';
+import type { CarState, SimEvent, Tuning } from '../physics/types';
 
 // Tiny synthesized engine: no downloads, RPM drives oscillator pitch directly.
 // AudioContext is created only after an explicit click (browser autoplay policy).

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64">
+  <!-- Iron Clad glass armor, hood vents, orange trim, head and tail lamps. -->
+  <path d="M31 17 66 14 88 16 95 20 95 44 88 48 66 50 31 47Z" fill="#081a24" stroke="#bed4d7" stroke-opacity=".72" stroke-width="2"/>
+  <path d="M61 14v36M87 17v30" stroke="#4b727b" stroke-width="3"/>
+  <path d="M98 20h12M98 26h12M98 38h12M98 44h12" stroke="#101d29" stroke-width="3"/>
+  <path d="M22 17h7M22 47h7" stroke="#ff8a3d" stroke-width="3"/>
+  <path d="M16 30h5M16 34h5" stroke="#7799a1" stroke-width="2"/>
+  <rect x="117" y="18" width="6" height="10" rx="1" fill="#e9fdff"/>
+  <rect x="117" y="36" width="6" height="10" rx="1" fill="#e9fdff"/>
+  <rect x="5" y="19" width="6" height="10" rx="1" fill="#ff4d4d"/>
+  <rect x="5" y="35" width="6" height="10" rx="1" fill="#ff4d4d"/>
+</svg>

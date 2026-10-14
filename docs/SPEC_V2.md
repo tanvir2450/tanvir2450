@@ -1,23 +1,131 @@
 # Game Specification — v2
 
-> **Change note (2026-10-14):** Section 9 (Driving Physics) and Section 11
-> (Art Direction) have been replaced with the professional versions below.
-> A new short **Section 11B (Visual Polish / "Game Feel")** has been added.
-> No previous spec file existed in this repository, so the unaffected
-> sections are listed as placeholders in the contents — fill them in from
-> the v1/v2 draft rather than treating their absence as a deletion.
+> **Change note (2026-10-14):** The supplied Section 1 scaffold and asset rules
+> are integrated below. Section 9 (Driving Physics) and Section 11 (Art
+> Direction) were replaced with the professional versions, and Section 11B
+> (Visual Polish / "Game Feel") was added. No previous spec file existed in
+> this repository; unprovided sections are marked as placeholders, not deleted.
 
 ## Contents
 
 | Section | Title | Status |
 |---|---|---|
-| 1–8 | *(unchanged from previous draft — to be restored here)* | Placeholder |
+| **1** | **Project Scaffold & Asset Pipeline** | **Integrated — see below** |
+| 2–8 | *(unchanged from previous draft — to be restored here)* | Placeholder |
 | **9** | **Car Mechanics (Professional 2D Model)** | **Replaced — see below** |
 | 10 | *(unchanged from previous draft — to be restored here)* | Placeholder |
 | **11** | **Graphics & Art Direction (Professional)** | **Replaced — see below** |
 | **11B** | **Visual Polish & Game Feel ("Juice")** | **New — see below** |
 | 12+ | *(unchanged from previous draft — to be restored here)* | Placeholder |
 | — | Build Plan | Updated — see end of document |
+
+---
+
+# SECTION 1: PROJECT SCAFFOLD & ASSET PIPELINE
+
+## 1.1 Directory Structure
+
+Keep the existing repository and TypeScript/Vite entry point; organize the playable
+lab rather than replacing it with empty JavaScript stubs:
+
+```text
+index.html                 Vite entry + HUD markup
+package.json               dev, assets, test, build scripts
+data/
+  cars.json                nine vehicle profiles, presentation + surfaces
+  tracks.json              three selectable test routes
+  tuning.json              60 Hz simulation and gameplay constants
+assets/
+  cars/source/             editable 2× SVG body/wheels/lights layers
+  cars/*.png               generated 2× layer exports
+  textures/atlas.{json,png} generated core atlas (TexturePacker JSON)
+  effects/ environment/ ui/ audio/   reserved for future authored assets
+scripts/build-assets.mjs   validate references, export PNG, pack atlas
+src/
+  main.ts                  create simulation, scene, controls, HUD, event bus
+  config/game.ts           Phaser WebGL-first, responsive game configuration
+  scenes/BootScene.ts      preload the core atlas
+  scenes/DriveScene.ts     render, interpolate, tile streaming, fixed-step loop
+  entities/{Car,Traffic,Pickups}.ts   car factory, AI, repair eligibility
+  physics/{catalog,collision,math,simulation,track,types}.ts   DOM-free simulation
+  systems/{AudioManager,EventBus,Input}.ts   opt-in synth sound, events, input
+  ui/HUD.ts                garage/test HUD
+  utils/{DebugPanel,TrackArt,dom}.ts   telemetry, camera-local scenery, DOM
+```
+
+Menu, Garage and Race scenes, missions, district atlases, localized UI and
+recorded audio are **future work**. The car/route chooser is currently a DOM HUD
+within the driving lab, not a finished Garage scene.
+
+## 1.2 Phaser Configuration & Simulation
+
+`src/config/game.ts` uses **WebGL by default** (Canvas if WebGL is unavailable or
+`?renderer=canvas` is requested), `#0B0F1A` background, anti-aliasing, a 60 FPS
+render target, and responsive `Phaser.Scale.RESIZE` for landscape phones. The
+actual **fixed 60 Hz** physics is an accumulator inside `DriveScene` using
+`data/tuning.json`'s `simulation.hz`; rendering interpolates between fixed
+states. Phaser is a renderer here: no Arcade/Matter physics plugin is used.
+The sample `physics.default: 'custom'` would attempt to load a nonexistent
+Phaser physics plugin, and `physicsStep` is not a Phaser GameConfig property;
+setting either would **not** implement this simulation. Likewise, `FIT` would
+shrink the current touch HUD and `forceSetTimeOut` would bypass normal animation
+frames. Retain working responsive controls and fixed-step handling.
+
+## 1.3 Cars and Tracks Data Contract
+
+`data/cars.json` stores each car's unique `id`, display `name`, `class`, fourteen
+numeric/array handling fields (units defined in Section 9), optional `art`
+layer references relative to `/assets`, and a `visual` object for dimensions,
+paint and tagline. `data/tracks.json` defines the three test routes;
+`data/tuning.json` holds shared physics constants and AI traffic. The **14
+original Falcon stat values are unchanged** (see 9.11). Its layer paths are
+`cars/falcon_body.png`, `cars/falcon_wheels.png`, and `cars/falcon_lights.png`.
+The supplied heavyweight is an independent ninth car:
+
+```json
+{
+  "id": "tank", "name": "Iron Clad", "class": "muscle",
+  "mass": 1900, "enginePower": 450,
+  "torqueCurve": [0.7, 0.9, 1, 0.85, 0.6],
+  "gearRatios": [3.5, 2.5, 1.8, 1.3, 1],
+  "topSpeed": 55, "gripFront": 0.9, "gripRear": 1.1,
+  "slideGrip": 0.65, "steerMax": 28, "steerSpeedFalloff": 0.8,
+  "brakeForce": 0.9, "dragCoeff": 0.45, "armor": 8,
+  "nitroCapacity": 3,
+  "art": {
+    "body": "cars/tank_body.png",
+    "wheels": "cars/tank_wheels.png",
+    "lights": "cars/tank_lights.png"
+  }
+}
+```
+
+The earlier car with id `ironclad` retains its existing handling stats but has
+**Bulwark** as its display name, so two unrelated cars are not both called
+Iron Clad. Profiles without `art` still use the existing procedural vector
+renderer while their own source layers are authored in Step 10.
+
+## 1.4 Asset Rules
+
+- **Source/export:** Author aligned, top-down car layers at **2×** (nominal
+  64×32 px car → 128×64 px source/PNG). Run `npm run assets` to export real
+  transparent PNGs from `assets/cars/source/*.svg`; `predev`/`prebuild` do so
+  automatically. The checked-in exports are not placeholder paths.
+- **Packing:** `scripts/build-assets.mjs` packs every `car.art` layer into
+  `assets/textures/atlas.png` with `atlas.json` frame metadata. Reject missing
+  sources, duplicate/invalid paths, atlases over 2048 px per side and core
+  atlas transfers over 8 MiB. `BootScene` loads **only** this core atlas.
+- **Names:** Use `category_name_state.png` for future standalone art, e.g.
+  `effects_smoke_idle.png`. The provided canonical car path convention uses
+  the `cars/` directory as category and `falcon_body.png` as name/state.
+- **Audio:** Record OGG primary / MP3 fallback with matching stems for future
+  audio assets. The current lab deliberately uses gesture-gated Web Audio
+  oscillators instead; no silent or mislabeled audio placeholders are loaded.
+- **Loading/performance:** Keep *all* first-load assets under **8 MiB**, not
+  only the atlas. Core shared sprites load at boot; district-specific atlases
+  and sound must lazy-load when the district is entered. Present test-track
+  terrain is generated in camera-local canvas tiles on demand. Device budget
+  verification still needs a physical mid-range phone (Section 11.5).
 
 ---
 
@@ -125,7 +233,7 @@ Each car in `cars.json` defines these tuning values, so every car feels distinct
 ```
 
 > The Falcon's 14 fields above remain unchanged in [`/data/cars.json`](../data/cars.json),
-> alongside seven additional selectable profiles and the surface table.
+> alongside eight additional selectable profiles and the surface table.
 > The playable Step 2 implementation and outstanding gates are tracked in
 > [the Step 2 guide](STEP2.md).
 

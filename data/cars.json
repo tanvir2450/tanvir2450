@@ -1,12 +1,26 @@
 {
-  "$comment": "All gameplay car values are in real units: mass kg, enginePower mechanical horsepower (hp), topSpeed m/s, steerMax degrees, nitroCapacity seconds. The 14 original Falcon fields are unchanged. Added cars are provisional and must be tuned against Section 9.12 feel targets on a real device.",
+  "$comment": "Stats are real units (mass kg, enginePower mechanical hp, topSpeed m/s, steerMax degrees, nitroCapacity seconds). The original 14 Falcon stats are unchanged. name/class/art/visual are per-car metadata; art paths are relative to /assets and packed into assets/textures/atlas.json. Cars without art use vector fallback until Step 10.",
   "cars": [
     {
       "id": "falcon",
+      "name": "Neon Falcon",
+      "class": "sport",
       "mass": 1250,
       "enginePower": 310,
-      "torqueCurve": [0.55, 0.85, 1.0, 0.9, 0.7],
-      "gearRatios": [3.2, 2.2, 1.6, 1.2, 0.95],
+      "torqueCurve": [
+        0.55,
+        0.85,
+        1.0,
+        0.9,
+        0.7
+      ],
+      "gearRatios": [
+        3.2,
+        2.2,
+        1.6,
+        1.2,
+        0.95
+      ],
       "topSpeed": 62,
       "gripFront": 1.05,
       "gripRear": 0.95,
@@ -16,14 +30,41 @@
       "brakeForce": 1.0,
       "dragCoeff": 0.35,
       "armor": 4,
-      "nitroCapacity": 5
+      "nitroCapacity": 5,
+      "art": {
+        "body": "cars/falcon_body.png",
+        "wheels": "cars/falcon_wheels.png",
+        "lights": "cars/falcon_lights.png"
+      },
+      "visual": {
+        "body": "coupe",
+        "paint": "#00e5ff",
+        "accent": "#ffffff",
+        "length": 4.3,
+        "width": 1.9,
+        "tagline": "A precise all-rounder with a playful tail."
+      }
     },
     {
       "id": "compact_starter",
+      "name": "Metro",
+      "class": "starter",
       "mass": 1100,
       "enginePower": 180,
-      "torqueCurve": [0.6, 0.85, 1.0, 0.88, 0.68],
-      "gearRatios": [3.2, 2.2, 1.6, 1.2, 0.95],
+      "torqueCurve": [
+        0.6,
+        0.85,
+        1.0,
+        0.88,
+        0.68
+      ],
+      "gearRatios": [
+        3.2,
+        2.2,
+        1.6,
+        1.2,
+        0.95
+      ],
       "topSpeed": 48,
       "gripFront": 1.0,
       "gripRear": 1.0,
@@ -33,14 +74,36 @@
       "brakeForce": 0.95,
       "dragCoeff": 0.38,
       "armor": 3,
-      "nitroCapacity": 4
+      "nitroCapacity": 4,
+      "visual": {
+        "body": "hatch",
+        "paint": "#ffd23f",
+        "accent": "#fff3c4",
+        "length": 3.9,
+        "width": 1.78,
+        "tagline": "Forgiving corners. Big-city energy."
+      }
     },
     {
       "id": "muscle",
+      "name": "Brute",
+      "class": "muscle",
       "mass": 1900,
       "enginePower": 420,
-      "torqueCurve": [0.7, 0.95, 1.0, 0.85, 0.6],
-      "gearRatios": [3.2, 2.2, 1.6, 1.2, 0.95],
+      "torqueCurve": [
+        0.7,
+        0.95,
+        1.0,
+        0.85,
+        0.6
+      ],
+      "gearRatios": [
+        3.2,
+        2.2,
+        1.6,
+        1.2,
+        0.95
+      ],
       "topSpeed": 58,
       "gripFront": 1.0,
       "gripRear": 0.88,
@@ -50,14 +113,36 @@
       "brakeForce": 0.9,
       "dragCoeff": 0.42,
       "armor": 6,
-      "nitroCapacity": 5
+      "nitroCapacity": 5,
+      "visual": {
+        "body": "muscle",
+        "paint": "#ff603e",
+        "accent": "#ffe1d4",
+        "length": 4.85,
+        "width": 2.08,
+        "tagline": "Heavy metal with a loose rear end."
+      }
     },
     {
       "id": "arc_sprint",
+      "name": "Arc Sprint",
+      "class": "lightweight",
       "mass": 980,
       "enginePower": 205,
-      "torqueCurve": [0.75, 0.92, 1.0, 0.93, 0.74],
-      "gearRatios": [3.4, 2.4, 1.72, 1.28, 1.0],
+      "torqueCurve": [
+        0.75,
+        0.92,
+        1.0,
+        0.93,
+        0.74
+      ],
+      "gearRatios": [
+        3.4,
+        2.4,
+        1.72,
+        1.28,
+        1.0
+      ],
       "topSpeed": 51,
       "gripFront": 1.12,
       "gripRear": 1.08,
@@ -67,14 +152,36 @@
       "brakeForce": 1.1,
       "dragCoeff": 0.36,
       "armor": 2.5,
-      "nitroCapacity": 3.5
+      "nitroCapacity": 3.5,
+      "visual": {
+        "body": "hatch",
+        "paint": "#7dffb3",
+        "accent": "#d7fff0",
+        "length": 3.78,
+        "width": 1.73,
+        "tagline": "Featherweight response, razor-sharp grip."
+      }
     },
     {
       "id": "spectre_rs",
+      "name": "Spectre RS",
+      "class": "track sport",
       "mass": 1370,
       "enginePower": 350,
-      "torqueCurve": [0.52, 0.82, 1.0, 0.98, 0.77],
-      "gearRatios": [3.0, 2.08, 1.48, 1.1, 0.86],
+      "torqueCurve": [
+        0.52,
+        0.82,
+        1.0,
+        0.98,
+        0.77
+      ],
+      "gearRatios": [
+        3.0,
+        2.08,
+        1.48,
+        1.1,
+        0.86
+      ],
       "topSpeed": 67,
       "gripFront": 1.13,
       "gripRear": 1.1,
@@ -84,14 +191,36 @@
       "brakeForce": 1.08,
       "dragCoeff": 0.31,
       "armor": 3.5,
-      "nitroCapacity": 5.5
+      "nitroCapacity": 5.5,
+      "visual": {
+        "body": "coupe",
+        "paint": "#9568ff",
+        "accent": "#e6dcff",
+        "length": 4.42,
+        "width": 1.94,
+        "tagline": "More grip than doubt."
+      }
     },
     {
       "id": "riptide",
+      "name": "Riptide",
+      "class": "drift",
       "mass": 1340,
       "enginePower": 320,
-      "torqueCurve": [0.63, 0.91, 1.0, 0.91, 0.7],
-      "gearRatios": [3.45, 2.25, 1.62, 1.24, 0.96],
+      "torqueCurve": [
+        0.63,
+        0.91,
+        1.0,
+        0.91,
+        0.7
+      ],
+      "gearRatios": [
+        3.45,
+        2.25,
+        1.62,
+        1.24,
+        0.96
+      ],
       "topSpeed": 60,
       "gripFront": 1.08,
       "gripRear": 0.8,
@@ -101,14 +230,36 @@
       "brakeForce": 0.98,
       "dragCoeff": 0.37,
       "armor": 3,
-      "nitroCapacity": 6
+      "nitroCapacity": 6,
+      "visual": {
+        "body": "coupe",
+        "paint": "#ff2e97",
+        "accent": "#ffd1ed",
+        "length": 4.47,
+        "width": 1.93,
+        "tagline": "Built sideways. Recover with the throttle."
+      }
     },
     {
       "id": "wraith_gt",
+      "name": "Wraith GT",
+      "class": "grand tourer",
       "mass": 1480,
       "enginePower": 510,
-      "torqueCurve": [0.42, 0.75, 1.0, 1.0, 0.78],
-      "gearRatios": [2.9, 2.06, 1.52, 1.13, 0.84],
+      "torqueCurve": [
+        0.42,
+        0.75,
+        1.0,
+        1.0,
+        0.78
+      ],
+      "gearRatios": [
+        2.9,
+        2.06,
+        1.52,
+        1.13,
+        0.84
+      ],
       "topSpeed": 75,
       "gripFront": 1.12,
       "gripRear": 1.16,
@@ -118,14 +269,36 @@
       "brakeForce": 1.12,
       "dragCoeff": 0.28,
       "armor": 3,
-      "nitroCapacity": 6
+      "nitroCapacity": 6,
+      "visual": {
+        "body": "super",
+        "paint": "#e9eefc",
+        "accent": "#00e5ff",
+        "length": 4.65,
+        "width": 2.02,
+        "tagline": "A long-legged missile with serious grip."
+      }
     },
     {
       "id": "ironclad",
+      "name": "Bulwark",
+      "class": "armored GT",
       "mass": 2050,
       "enginePower": 355,
-      "torqueCurve": [0.76, 0.94, 1.0, 0.85, 0.59],
-      "gearRatios": [3.1, 2.16, 1.57, 1.2, 0.94],
+      "torqueCurve": [
+        0.76,
+        0.94,
+        1.0,
+        0.85,
+        0.59
+      ],
+      "gearRatios": [
+        3.1,
+        2.16,
+        1.57,
+        1.2,
+        0.94
+      ],
       "topSpeed": 53,
       "gripFront": 0.95,
       "gripRear": 0.99,
@@ -135,24 +308,81 @@
       "brakeForce": 0.95,
       "dragCoeff": 0.45,
       "armor": 9,
-      "nitroCapacity": 4
+      "nitroCapacity": 4,
+      "visual": {
+        "body": "muscle",
+        "paint": "#74869d",
+        "accent": "#ff4d4d",
+        "length": 5.0,
+        "width": 2.13,
+        "tagline": "A steel-plated bruiser built for long chases."
+      }
+    },
+    {
+      "id": "tank",
+      "name": "Iron Clad",
+      "class": "muscle",
+      "mass": 1900,
+      "enginePower": 450,
+      "torqueCurve": [
+        0.7,
+        0.9,
+        1,
+        0.85,
+        0.6
+      ],
+      "gearRatios": [
+        3.5,
+        2.5,
+        1.8,
+        1.3,
+        1
+      ],
+      "topSpeed": 55,
+      "gripFront": 0.9,
+      "gripRear": 1.1,
+      "slideGrip": 0.65,
+      "steerMax": 28,
+      "steerSpeedFalloff": 0.8,
+      "brakeForce": 0.9,
+      "dragCoeff": 0.45,
+      "armor": 8,
+      "nitroCapacity": 3,
+      "art": {
+        "body": "cars/tank_body.png",
+        "wheels": "cars/tank_wheels.png",
+        "lights": "cars/tank_lights.png"
+      },
+      "visual": {
+        "body": "muscle",
+        "paint": "#899eae",
+        "accent": "#ff8a3d",
+        "length": 5.05,
+        "width": 2.12,
+        "tagline": "All torque. All armor. No apologies."
+      }
     }
   ],
-  "presentation": {
-    "falcon": { "name": "Falcon", "class": "Sport coupe", "body": "coupe", "paint": "#00e5ff", "accent": "#ffffff", "length": 4.3, "width": 1.9, "tagline": "A precise all-rounder with a playful tail." },
-    "compact_starter": { "name": "Metro", "class": "Starter hatch", "body": "hatch", "paint": "#ffd23f", "accent": "#fff3c4", "length": 3.9, "width": 1.78, "tagline": "Forgiving corners. Big-city energy." },
-    "muscle": { "name": "Brute", "class": "Muscle", "body": "muscle", "paint": "#ff603e", "accent": "#ffe1d4", "length": 4.85, "width": 2.08, "tagline": "Heavy metal with a loose rear end." },
-    "arc_sprint": { "name": "Arc Sprint", "class": "Lightweight", "body": "hatch", "paint": "#7dffb3", "accent": "#d7fff0", "length": 3.78, "width": 1.73, "tagline": "Featherweight response, razor-sharp grip." },
-    "spectre_rs": { "name": "Spectre RS", "class": "Track sport", "body": "coupe", "paint": "#9568ff", "accent": "#e6dcff", "length": 4.42, "width": 1.94, "tagline": "More grip than doubt." },
-    "riptide": { "name": "Riptide", "class": "Drift coupe", "body": "coupe", "paint": "#ff2e97", "accent": "#ffd1ed", "length": 4.47, "width": 1.93, "tagline": "Built sideways. Recover with the throttle." },
-    "wraith_gt": { "name": "Wraith GT", "class": "Grand tourer", "body": "super", "paint": "#e9eefc", "accent": "#00e5ff", "length": 4.65, "width": 2.02, "tagline": "A long-legged missile with serious grip." },
-    "ironclad": { "name": "Ironclad", "class": "Armored GT", "body": "muscle", "paint": "#74869d", "accent": "#ff4d4d", "length": 5.0, "width": 2.13, "tagline": "Bring the wall. Leave the dent." }
-  },
   "surfaces": {
-    "asphalt": { "grip": 1.0, "drag": 1.0 },
-    "wet": { "grip": 0.7, "drag": 1.0 },
-    "dirt": { "grip": 0.55, "drag": 1.6 },
-    "grass": { "grip": 0.45, "drag": 2.0 },
-    "oil": { "grip": 0.2, "drag": 1.0 }
+    "asphalt": {
+      "grip": 1.0,
+      "drag": 1.0
+    },
+    "wet": {
+      "grip": 0.7,
+      "drag": 1.0
+    },
+    "dirt": {
+      "grip": 0.55,
+      "drag": 1.6
+    },
+    "grass": {
+      "grip": 0.45,
+      "drag": 2.0
+    },
+    "oil": {
+      "grip": 0.2,
+      "drag": 1.0
+    }
   }
 }

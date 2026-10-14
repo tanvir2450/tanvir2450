@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
-import { forward, interpolateAngle, lerp, right, type Vec2 } from './sim/math';
-import type { Track } from './sim/track';
-import { drawTrackTile, TILE_SIZE } from './trackArt';
-import { Simulation } from './sim/simulation';
-import type { CarState, DriveInput, SimEvent } from './sim/types';
+import { forward, interpolateAngle, lerp, right, type Vec2 } from '../physics/math';
+import type { Track } from '../physics/track';
+import { drawTrackTile, TILE_SIZE } from '../utils/TrackArt';
+import { CAR_ATLAS_KEY } from './BootScene';
+import { Simulation } from '../physics/simulation';
+import type { CarState, DriveInput, SimEvent } from '../physics/types';
 
 interface ActorArt {
   container: Phaser.GameObjects.Container;
@@ -187,51 +188,67 @@ export class DriveScene extends Phaser.Scene {
     const shadow = this.add.graphics();
     shadow.fillStyle(0x040811, .55).fillRoundedRect(-L / 2 + 5, -W / 2 + 7, L, W, 12);
     container.add(shadow);
-    const wheels: Phaser.GameObjects.Rectangle[] = [];
     const frontWheels: Phaser.GameObjects.Rectangle[] = [];
-    for (const x of [-L * .33, L * .33]) for (const y of [-W * .51, W * .51]) {
-      const wheel = this.add.rectangle(x, y, L * .17, W * .16, 0x070b12).setStrokeStyle(1, 0x98a3aa);
-      wheels.push(wheel);
-      if (x > 0) frontWheels.push(wheel);
+    const layers = car.profile.art;
+    const atlas = this.textures.exists(CAR_ATLAS_KEY) ? this.textures.get(CAR_ATLAS_KEY) : null;
+    const layered = layers && atlas && Object.values(layers).every(frame => atlas.has(frame));
+    if (layered && layers) {
+      const wheelsImage = this.add.image(0, 0, CAR_ATLAS_KEY, layers.wheels).setDisplaySize(L, W);
+      const bodyImage = this.add.image(0, 0, CAR_ATLAS_KEY, layers.body).setDisplaySize(L, W).setTint(paint);
+      container.add([wheelsImage, bodyImage]);
+      if (layers.decals) container.add(this.add.image(0, 0, CAR_ATLAS_KEY, layers.decals).setDisplaySize(L, W));
+      for (const y of [-W * .47, W * .47]) {
+        const wheel = this.add.rectangle(L * .33, y, L * .17, W * .17, 0x070b12).setStrokeStyle(1, 0x98a3aa);
+        frontWheels.push(wheel);
+        container.add(wheel);
+      }
+      container.add(this.add.image(0, 0, CAR_ATLAS_KEY, layers.lights).setDisplaySize(L, W));
+    } else {
+      const wheels: Phaser.GameObjects.Rectangle[] = [];
+      for (const x of [-L * .33, L * .33]) for (const y of [-W * .51, W * .51]) {
+        const wheel = this.add.rectangle(x, y, L * .17, W * .16, 0x070b12).setStrokeStyle(1, 0x98a3aa);
+        wheels.push(wheel);
+        if (x > 0) frontWheels.push(wheel);
+      }
+      container.add(wheels);
+      const body = this.add.graphics();
+      // Distinct silhouettes by class, all facing right in source orientation.
+      const nose = car.art.body === 'super' ? .48 : car.art.body === 'hatch' ? .43 : .49;
+      const rear = car.art.body === 'muscle' ? .48 : .44;
+      body.fillStyle(paint, 1);
+      body.lineStyle(2, 0x08121e, 1);
+      body.fillPoints([
+        { x: -L * rear, y: -W * .30 }, { x: -L * .37, y: -W * .47 },
+        { x: L * .22, y: -W * .47 }, { x: L * nose, y: -W * .32 },
+        { x: L * nose, y: W * .32 }, { x: L * .22, y: W * .47 },
+        { x: -L * .37, y: W * .47 }, { x: -L * rear, y: W * .30 },
+      ], true); body.strokePath();
+      // Top-facing highlights and glass canopy (no texture downloads needed).
+      body.lineStyle(2, accent, .72);
+      body.lineBetween(-L * .34, -W * .42, L * .19, -W * .42);
+      body.fillStyle(0x0b1a29, 1);
+      const cabinFront = car.art.body === 'muscle' ? L * .03 : L * .16;
+      const cabinRear = car.art.body === 'hatch' ? -L * .30 : -L * .22;
+      body.fillPoints([
+        { x: cabinRear, y: -W * .3 }, { x: cabinFront, y: -W * .31 },
+        { x: cabinFront + L * .08, y: -W * .21 }, { x: cabinFront + L * .08, y: W * .21 },
+        { x: cabinFront, y: W * .31 }, { x: cabinRear, y: W * .3 },
+      ], true);
+      body.lineStyle(2, accent, .55);
+      body.lineBetween(cabinFront, -W * .3, cabinFront, W * .3);
+      body.lineStyle(1, accent, .35);
+      body.lineBetween(cabinRear, -W * .3, cabinRear, W * .3);
+      body.lineStyle(2, 0xffffff, .27);
+      body.lineBetween(L * .28, -W * .25, L * .28, W * .25);
+      if (car.art.body === 'muscle' || car.art.body === 'super') {
+        body.lineStyle(5, 0x0c1726, .8);
+        body.lineBetween(-L * .43, -W * .47, -L * .43, W * .47);
+      }
+      body.fillStyle(0xe8ffff, 1);
+      body.fillRect(L * .43, -W * .3, 5, 9);
+      body.fillRect(L * .43, W * .16, 5, 9);
+      container.add(body);
     }
-    container.add(wheels);
-    const body = this.add.graphics();
-    // Distinct silhouettes by class, all facing right in source orientation.
-    const nose = car.art.body === 'super' ? .48 : car.art.body === 'hatch' ? .43 : .49;
-    const rear = car.art.body === 'muscle' ? .48 : .44;
-    body.fillStyle(paint, 1);
-    body.lineStyle(2, 0x08121e, 1);
-    body.fillPoints([
-      { x: -L * rear, y: -W * .30 }, { x: -L * .37, y: -W * .47 },
-      { x: L * .22, y: -W * .47 }, { x: L * nose, y: -W * .32 },
-      { x: L * nose, y: W * .32 }, { x: L * .22, y: W * .47 },
-      { x: -L * .37, y: W * .47 }, { x: -L * rear, y: W * .30 },
-    ], true); body.strokePath();
-    // Top-facing highlights and glass canopy (no texture downloads needed).
-    body.lineStyle(2, accent, .72);
-    body.lineBetween(-L * .34, -W * .42, L * .19, -W * .42);
-    body.fillStyle(0x0b1a29, 1);
-    const cabinFront = car.art.body === 'muscle' ? L * .03 : L * .16;
-    const cabinRear = car.art.body === 'hatch' ? -L * .30 : -L * .22;
-    body.fillPoints([
-      { x: cabinRear, y: -W * .3 }, { x: cabinFront, y: -W * .31 },
-      { x: cabinFront + L * .08, y: -W * .21 }, { x: cabinFront + L * .08, y: W * .21 },
-      { x: cabinFront, y: W * .31 }, { x: cabinRear, y: W * .3 },
-    ], true);
-    body.lineStyle(2, accent, .55);
-    body.lineBetween(cabinFront, -W * .3, cabinFront, W * .3);
-    body.lineStyle(1, accent, .35);
-    body.lineBetween(cabinRear, -W * .3, cabinRear, W * .3);
-    body.lineStyle(2, 0xffffff, .27);
-    body.lineBetween(L * .28, -W * .25, L * .28, W * .25);
-    if (car.art.body === 'muscle' || car.art.body === 'super') {
-      body.lineStyle(5, 0x0c1726, .8);
-      body.lineBetween(-L * .43, -W * .47, -L * .43, W * .47);
-    }
-    body.fillStyle(0xe8ffff, 1);
-    body.fillRect(L * .43, -W * .3, 5, 9);
-    body.fillRect(L * .43, W * .16, 5, 9);
-    container.add(body);
     const scratches = this.add.graphics();
     scratches.lineStyle(1.5, oppositeColor(car.art.paint), .7);
     scratches.lineBetween(-L * .09, -W * .19, L * .12, -W * .30);

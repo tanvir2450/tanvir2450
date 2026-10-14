@@ -4,8 +4,17 @@ export type SurfaceId = 'asphalt' | 'wet' | 'dirt' | 'grass' | 'oil';
 export type HitZone = 'front' | 'rear' | 'left' | 'right';
 export type BodyShape = 'hatch' | 'coupe' | 'muscle' | 'super';
 
+export interface CarArtLayers {
+  body: string;           // path relative to /assets, e.g. cars/falcon_body.png
+  wheels: string;
+  lights: string;
+  decals?: string;        // optional separate damage/trim pass when authored
+}
+
 export interface CarProfile {
   id: string;
+  name: string;
+  class: string;
   mass: number;             // kg
   enginePower: number;      // mechanical hp at peakPowerRpm
   torqueCurve: [number, number, number, number, number];
@@ -20,6 +29,8 @@ export interface CarProfile {
   dragCoeff: number;
   armor: number;
   nitroCapacity: number;    // seconds at full burn
+  art?: CarArtLayers;       // optional during migration; missing art uses vector fallback
+  visual: Omit<CarPresentation, 'name' | 'class'>;
 }
 
 export interface CarPresentation {

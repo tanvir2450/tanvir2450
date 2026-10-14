@@ -1,28 +1,12 @@
-import { EngineAudio } from './audio';
-import { Controls } from './controls';
-import { DriveScene } from './scene';
-import { catalog, defaultTuning, tracks } from './sim/catalog';
-import { clamp, degrees, forward } from './sim/math';
-import { Simulation } from './sim/simulation';
-import type { HitZone, SimEvent, Tuning } from './sim/types';
-
-const el = <T extends HTMLElement = HTMLElement>(id: string): T => {
-  const item = document.getElementById(id);
-  if (!item) throw new Error(`Missing UI element #${id}`);
-  return item as T;
-};
-
-interface SliderDefinition { label: string; section: keyof Tuning; key: string; min: number; max: number; step: number; unit?: string }
-const sliders: SliderDefinition[] = [
-  { label: 'OVERALL TIRE GRIP', section: 'tires', key: 'gripScale', min: .3, max: 1.6, step: .01, unit: '×' },
-  { label: 'FRONT STIFFNESS', section: 'tires', key: 'frontStiffness', min: 1, max: 6, step: .05 },
-  { label: 'REAR STIFFNESS', section: 'tires', key: 'rearStiffness', min: 1, max: 6, step: .05 },
-  { label: 'YAW DAMPING', section: 'tires', key: 'yawDamping', min: .25, max: 4.5, step: .05 },
-  { label: 'ENGINE FORCE', section: 'engine', key: 'forceScale', min: .4, max: 1.7, step: .01, unit: '×' },
-  { label: 'STEER RATE', section: 'steering', key: 'turnRateDeg', min: 120, max: 450, step: 5, unit: '°/s' },
-  { label: 'BRAKE DECEL', section: 'braking', key: 'deceleration', min: 6, max: 18, step: .25, unit: 'm/s²' },
-  { label: 'ASSIST GAIN', section: 'steering', key: 'assistGain', min: 0, max: 1, step: .02 },
-];
+import { EngineAudio } from '../systems/AudioManager';
+import { Controls } from '../systems/Input';
+import { DriveScene } from '../scenes/DriveScene';
+import { catalog, tracks } from '../physics/catalog';
+import { clamp, forward } from '../physics/math';
+import { Simulation } from '../physics/simulation';
+import type { HitZone, SimEvent } from '../physics/types';
+import { DebugPanel } from '../utils/DebugPanel';
+import { el } from '../utils/dom';
 
 export class HUD {
   private sim: Simulation;
@@ -31,12 +15,11 @@ export class HUD {
   private audio: EngineAudio;
   private lastDraw = -1;
   private mapDraw = -1;
-  private fps = 60;
-  private debugOpen = false;
-  private sliderInputs: HTMLInputElement[] = [];
+  private debug: DebugPanel;
 
   constructor(sim: Simulation, scene: DriveScene, controls: Controls, audio: EngineAudio) {
     this.sim = sim; this.scene = scene; this.controls = controls; this.audio = audio;
+    this.debug = new DebugPanel(sim, message => this.toast(message));
     const carSelect = el<HTMLSelectElement>('car-select');
     const trackSelect = el<HTMLSelectElement>('track-select');
     for (const car of catalog.cars) carSelect.add(new Option(catalog.presentation[car.id].name.toUpperCase(), car.id));
@@ -47,14 +30,10 @@ export class HUD {
     trackSelect.addEventListener('change', () => this.reset());
     el('reset-button').addEventListener('click', () => this.reset());
     el('service-button').addEventListener('click', () => this.sim.service());
-    el('debug-toggle').addEventListener('click', () => this.toggleDebug());
-    el('debug-close').addEventListener('click', () => this.toggleDebug(false));
-    el('tuning-reset').addEventListener('click', () => this.resetTuning());
     el('sound-toggle').addEventListener('click', () => void this.toggleAudio());
     controls.onReset = () => this.reset();
-    controls.onDebug = () => this.toggleDebug();
+    controls.onDebug = () => this.debug.toggle();
     controls.onToast = message => this.toast(message);
-    this.makeSliders();
     this.updateVehicle();
     this.drawMap();
     this.update(60, true);
@@ -96,54 +75,7 @@ export class HUD {
     el('route-id').textContent = this.sim.track.config.code;
   }
 
-  private toggleDebug(force?: boolean): void {
-    this.debugOpen = force ?? !this.debugOpen;
-    el('debug-panel').hidden = !this.debugOpen;
-    el('debug-toggle').setAttribute('aria-expanded', String(this.debugOpen));
-  }
-
-  private setting(section: keyof Tuning, key: string, value?: number): number {
-    const group = this.sim.tuning[section] as unknown as Record<string, number>;
-    if (value !== undefined) group[key] = value;
-    return group[key];
-  }
-
-  private makeSliders(): void {
-    const root = el('tuning-sliders');
-    for (const def of sliders) {
-      const row = document.createElement('label');
-      row.className = 'slider-row';
-      const caption = document.createElement('span');
-      const title = document.createElement('span'); title.textContent = def.label;
-      const output = document.createElement('output');
-      caption.append(title, output);
-      const input = document.createElement('input');
-      input.type = 'range'; input.min = String(def.min); input.max = String(def.max); input.step = String(def.step);
-      input.value = String(this.setting(def.section, def.key));
-      output.textContent = `${Number(input.value).toFixed(def.step < 1 ? 2 : 0)}${def.unit ?? ''}`;
-      input.addEventListener('input', () => {
-        this.setting(def.section, def.key, Number(input.value));
-        output.textContent = `${Number(input.value).toFixed(def.step < 1 ? 2 : 0)}${def.unit ?? ''}`;
-      });
-      row.append(caption, input);
-      root.append(row);
-      this.sliderInputs.push(input);
-    }
-  }
-
-  private resetTuning(): void {
-    const baseline = defaultTuning();
-    for (const [index, def] of sliders.entries()) {
-      const reference = (baseline[def.section] as unknown as Record<string, number>)[def.key];
-      this.setting(def.section, def.key, reference);
-      const input = this.sliderInputs[index];
-      input.value = String(reference);
-      input.dispatchEvent(new Event('input'));
-    }
-    this.toast('TUNING DEFAULTS RESTORED');
-  }
-
-  onEvents(events: SimEvent[]): void {
+  onEvents(events: readonly SimEvent[]): void {
     for (const event of events) {
       this.audio.event(event);
       if (event.carId !== 'player' && event.type !== 'service') continue;
@@ -172,7 +104,6 @@ export class HUD {
     this.audio.update(this.sim.player, this.sim.tuning, this.controls.read().throttle);
     if (!force && now - this.lastDraw < 40) return;
     this.lastDraw = now;
-    this.fps = fps;
     const car = this.sim.player, t = this.sim.tuning;
     const speed = Math.round(Math.hypot(car.velocity.x, car.velocity.y) * 3.6);
     el('speed-value').textContent = String(speed).padStart(3, '0');
@@ -202,18 +133,7 @@ export class HUD {
       const indicator = document.querySelector<HTMLElement>(`[data-zone="${zone as HitZone}"]`);
       if (indicator) { indicator.style.backgroundColor = value > .6 ? '#ff4d4d' : value > .22 ? '#ffd23f' : '#7dffb3'; indicator.title = `${zone}: ${Math.round(value * 100)}% damage`; }
     }
-    if (this.debugOpen) {
-      el('dbg-speed').textContent = String(speed);
-      el('dbg-rpm').textContent = String(Math.round(car.rpm));
-      el('dbg-gear').textContent = `${car.gear} / 5`;
-      el('dbg-fps').textContent = String(Math.round(this.fps));
-      el('dbg-slip').textContent = `${degrees(car.slipAngle).toFixed(1)}°`;
-      el('dbg-surface').textContent = car.surface.toUpperCase();
-      el('dbg-front').textContent = `${Math.round(car.frontGripUsage * 100)}%${car.frontSliding ? ' SLIDE' : ''}`;
-      el('dbg-rear').textContent = `${Math.round(car.rearGripUsage * 100)}%${car.rearSliding ? ' SLIDE' : ''}`;
-      el('front-grip-fill').style.width = `${Math.min(100, car.frontGripUsage * 100)}%`;
-      el('rear-grip-fill').style.width = `${Math.min(100, car.rearGripUsage * 100)}%`;
-    }
+    this.debug.update(fps);
     if (force || now - this.mapDraw > 90) { this.mapDraw = now; this.drawMap(); }
   }
 

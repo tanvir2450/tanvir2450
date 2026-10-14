@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { catalog, defaultTuning, profileById, tracks, validateCatalog } from '../src/sim/catalog';
-import { carBox, hitZone, intersectBoxes, resolveCollision, segmentBox } from '../src/sim/collision';
-import { vec } from '../src/sim/math';
-import { createCar, neutralInput, Simulation, torqueAtRpm } from '../src/sim/simulation';
-import type { DriveInput } from '../src/sim/types';
+import { catalog, defaultTuning, profileById, tracks, validateCatalog } from '../src/physics/catalog';
+import { carBox, hitZone, intersectBoxes, resolveCollision, segmentBox } from '../src/physics/collision';
+import { vec } from '../src/physics/math';
+import { createCar } from '../src/entities/Car';
+import { neutralInput, Simulation, torqueAtRpm } from '../src/physics/simulation';
+import type { DriveInput } from '../src/physics/types';
 
 const drive: DriveInput = { ...neutralInput, throttle: 1 };
 const advance = (sim: Simulation, seconds: number, input: DriveInput = drive) => {
@@ -12,18 +13,37 @@ const advance = (sim: Simulation, seconds: number, input: DriveInput = drive) =>
 };
 
 describe('data and courses', () => {
-  it('keeps the user-supplied Falcon stats verbatim and registers eight unique playable cars', () => {
+  it('preserves all 14 original Falcon values and registers nine unique playable cars', () => {
     expect(() => validateCatalog()).not.toThrow();
-    expect(catalog.cars).toHaveLength(8);
+    expect(catalog.cars).toHaveLength(9);
     const falcon = profileById('falcon');
-    expect(falcon).toEqual({
-      id: 'falcon', mass: 1250, enginePower: 310,
+    const statKeys = [
+      'mass', 'enginePower', 'torqueCurve', 'gearRatios', 'topSpeed', 'gripFront', 'gripRear',
+      'slideGrip', 'steerMax', 'steerSpeedFalloff', 'brakeForce', 'dragCoeff', 'armor', 'nitroCapacity',
+    ] as const;
+    expect(Object.fromEntries(statKeys.map(key => [key, falcon[key]]))).toEqual({
+      mass: 1250, enginePower: 310,
       torqueCurve: [.55, .85, 1, .9, .7], gearRatios: [3.2, 2.2, 1.6, 1.2, .95],
       topSpeed: 62, gripFront: 1.05, gripRear: .95, slideGrip: .7,
       steerMax: 32, steerSpeedFalloff: .75, brakeForce: 1, dragCoeff: .35,
       armor: 4, nitroCapacity: 5,
     });
-    expect(new Set(catalog.cars.map(car => car.id)).size).toBe(8);
+    expect(falcon.art).toEqual({
+      body: 'cars/falcon_body.png', wheels: 'cars/falcon_wheels.png', lights: 'cars/falcon_lights.png',
+    });
+    const tank = profileById('tank');
+    expect(tank.name).toBe('Iron Clad');
+    expect(tank.class).toBe('muscle');
+    expect(Object.fromEntries(statKeys.map(key => [key, tank[key]]))).toEqual({
+      mass: 1900, enginePower: 450, torqueCurve: [.7, .9, 1, .85, .6],
+      gearRatios: [3.5, 2.5, 1.8, 1.3, 1], topSpeed: 55,
+      gripFront: .9, gripRear: 1.1, slideGrip: .65, steerMax: 28,
+      steerSpeedFalloff: .8, brakeForce: .9, dragCoeff: .45, armor: 8, nitroCapacity: 3,
+    });
+    expect(profileById('ironclad').name).toBe('Bulwark'); // prior profile remains independently selectable
+    expect(new Set(catalog.cars.map(car => car.id)).size).toBe(9);
+    expect(new Set(catalog.cars.map(car => car.name)).size).toBe(9);
+    for (const car of catalog.cars) expect(catalog.presentation[car.id].name).toBe(car.name);
   });
 
   it('contains a looping proving ground and oval plus all five surfaces', () => {

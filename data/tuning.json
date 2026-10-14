@@ -12,7 +12,7 @@
     "traffic": [
       { "carId": "compact_starter", "laneOffset": -2.2, "spawnAhead": 35, "initialSpeed": 8, "targetSpeed": 10.5 },
       { "carId": "spectre_rs", "laneOffset": 0, "spawnAhead": 85, "initialSpeed": 9, "targetSpeed": 11.8 },
-      { "carId": "ironclad", "laneOffset": 2.2, "spawnAhead": 135, "initialSpeed": 10, "targetSpeed": 12.6 }
+      { "carId": "tank", "laneOffset": 2.2, "spawnAhead": 135, "initialSpeed": 10, "targetSpeed": 12.6 }
     ],
     "lookAhead": 10, "lookAheadSpeedFactor": 0.6, "steerErrorScale": 0.48,
     "turnLookAhead": 16, "tightTurnAngle": 0.65, "tightTurnSpeedScale": 0.72,

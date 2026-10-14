@@ -1,26 +1,13 @@
-import { catalog, defaultTuning, profileById, trackById } from './catalog';
+import { catalog, defaultTuning, trackById } from './catalog';
+import { createCar } from '../entities/Car';
+import { trafficInput, type TrafficAgent } from '../entities/Traffic';
+import { canCollectQuickRepair } from '../entities/Pickups';
 import { carBox, hitZone, intersectBoxes, resolveCollision, segmentBox } from './collision';
 import { add, angleDiff, clamp, degrees, distance, dot, forward, length, lerp, moveTowards, mul, radians, right, sub, vec, type Vec2 } from './math';
 import type { Track } from './track';
 import type { CarState, DriveInput, HitZone, SimEvent, Tuning } from './types';
 
 export const neutralInput: DriveInput = { steer: 0, throttle: 0, brake: 0, handbrake: false, nitro: false, source: 'keyboard', assist: 0 };
-
-export function createCar(id: string, position: Vec2, heading = 0, entityId = id, tuning: Tuning = defaultTuning()): CarState {
-  const profile = profileById(id);
-  return {
-    id: entityId, profile, art: catalog.presentation[id],
-    position: { ...position }, previousPosition: { ...position }, heading, previousHeading: heading,
-    velocity: vec(), angularVelocity: 0, steerInput: 0, steering: 0,
-    gear: 1, rpm: tuning.engine.idleRpm, shiftCut: 0, shiftCooldown: 0, limiterOn: false,
-    handbrakeTime: 0, handbrakeCooldown: 0, handbrakeHeld: false,
-    nitro: profile.nitroCapacity * tuning.nitro.startFraction, nitroLock: 0, nitroActive: false,
-    health: tuning.damage.maxHealth, zones: { front: 0, rear: 0, left: 0, right: 0 },
-    surface: 'asphalt', slipAngle: 0, frontGripUsage: 0, rearGripUsage: 0, frontSliding: false, rearSliding: false,
-    drifting: false, driftSeconds: 0, driftPoints: 0, driftCombo: 1, driftUnbanked: 0, drafting: false,
-    sparkCooldown: 0, wrecked: false,
-  };
-}
 
 export function torqueAtRpm(car: CarState, tuning: Tuning): number {
   const { idleRpm, redlineRpm, peakPowerRpm, horsepowerWatts } = tuning.engine;
@@ -34,13 +21,11 @@ export function torqueAtRpm(car: CarState, tuning: Tuning): number {
   return peakTorqueNm * normalizedTorque;
 }
 
-interface Traffic { car: CarState; laneOffset: number; speed: number }
-
 export class Simulation {
   readonly tuning: Tuning;
   track: Track;
   player!: CarState;
-  traffic: Traffic[] = [];
+  traffic: TrafficAgent[] = [];
   coins = 0;
   styleScore = 0;
   repairAvailable = true;
@@ -111,7 +96,7 @@ export class Simulation {
     }
     this.player.drafting = this.isDrafting();
     this.driveCar(this.player, input, dt);
-    for (const agent of this.traffic) this.driveCar(agent.car, this.aiInput(agent), dt);
+    for (const agent of this.traffic) this.driveCar(agent.car, trafficInput(agent, this.track, this.tuning), dt);
 
     // Pairwise mass-based impulse resolution with OBBs.
     const all = this.cars;
@@ -145,27 +130,11 @@ export class Simulation {
       }
     }
     this.handleTraffic(dt);
-    if (this.repairAvailable && !this.player.wrecked && this.player.health < this.tuning.damage.maxHealth - this.tuning.damage.repairPickupMinDamage && distance(this.player.position, this.track.config.repair) < this.tuning.damage.repairPickupRadius) {
+    if (canCollectQuickRepair(this.player, this.track, this.tuning, this.repairAvailable)) {
       this.heal(this.player, this.tuning.damage.quickRepairHealth);
       this.repairAvailable = false;
       this.emit({ type: 'pickup', carId: 'player', position: { ...this.track.config.repair }, text: 'FREE REPAIR' });
     }
-  }
-
-  private aiInput(agent: Traffic): DriveInput {
-    const { car, laneOffset, speed } = agent;
-    const ai = this.tuning.ai;
-    const nearest = this.track.nearest(car.position);
-    const currentSpeed = length(car.velocity);
-    const ahead = this.track.lane(nearest.s + ai.lookAhead + currentSpeed * ai.lookAheadSpeedFactor, laneOffset);
-    const headingError = angleDiff(Math.atan2(ahead.point.y - car.position.y, ahead.point.x - car.position.x), car.heading);
-    const nextTurn = Math.abs(angleDiff(this.track.at(nearest.s + ai.turnLookAhead).heading, nearest.heading));
-    const targetSpeed = nextTurn > ai.tightTurnAngle ? speed * ai.tightTurnSpeedScale : speed;
-    return {
-      steer: clamp(headingError / ai.steerErrorScale, -1, 1), throttle: currentSpeed < targetSpeed ? ai.throttleInput : 0,
-      brake: currentSpeed > targetSpeed + ai.brakeMargin ? ai.brakeInput : 0,
-      handbrake: false, nitro: false, source: 'ai', assist: 0,
-    };
   }
 
   private driveCar(car: CarState, input: DriveInput, dt: number): void {
