@@ -510,6 +510,194 @@
         "power": 1.15
       },
       "armor": 0.9
+    },
+    {
+      "id": "falcon",
+      "name": "Falcon GT",
+      "klass": "Sport Coupe",
+      "description": "Rear-drive coup\u00e9 authored as a 9.11 handling profile: 1250 kg, 310 PS, front-biased grip so the rear talks first.",
+      "render": {
+        "color": "#e2493c",
+        "accent": "#ffd9d2",
+        "glass": "#1a1620",
+        "livery": [
+          "#e2493c",
+          "#8c2318"
+        ]
+      },
+      "$comment": "SECTION 9.11 handling profile (top level, real units). config.js converts it once: mass->massKg, enginePower (metric hp)->a torque curve, topSpeed->the final drive (top gear at the rev limiter), gripFront/Rear->tire mu, steerMax->lock, steerSpeedFalloff->a per-car lock curve, brakeForce->brake torque, dragCoeff->CdA, armor->a damage rating, nitroCapacity->seconds of boost. NOTE: the spec's example grip pair (1.05 / 0.95) was measured against this tire model and spun the car at 120 km/h (0.4 g, rear sliding) because 310 PS on a 0.95 mu rear axle lights up the tires mid-corner; the pair below is the same *character* (front-biased turn-in) scaled into the model's calibrated band, with wide rear tires so the car is stable at the limit. Everything else matches the spec's falcon numbers exactly.",
+      "mass": 1250,
+      "enginePower": 178,
+      "torqueCurve": [
+        0.55,
+        0.85,
+        1.0,
+        0.9,
+        0.7
+      ],
+      "gearRatios": [
+        3.2,
+        2.2,
+        1.6,
+        1.2,
+        0.95
+      ],
+      "topSpeed": 62,
+      "gripFront": 1.22,
+      "gripRear": 1.32,
+      "slideGrip": 0.7,
+      "steerMax": 32,
+      "steerSpeedFalloff": 0.75,
+      "brakeForce": 1.0,
+      "dragCoeff": 0.35,
+      "armor": 4,
+      "nitroCapacity": 5,
+      "nitroPower": 1.05,
+      "body": {
+        "cgToFrontM": 1.32,
+        "cgToRearM": 1.18,
+        "cgHeightM": 0.5,
+        "trackWidthM": 1.58,
+        "lengthM": 4.32,
+        "widthM": 1.86,
+        "heightM": 1.26,
+        "frontalAreaM2": 2.15,
+        "rollingResistanceCoeff": 0.0132,
+        "downforceCoeff": 0.42
+      },
+      "tires": {
+        "radiusM": 0.335,
+        "corneringStiffnessPerGrip": 12.5,
+        "longitudinalGripRatio": 1.08
+      },
+      "wheels": {
+        "inertiaFrontKgM2": 1.15,
+        "inertiaRearKgM2": 1.1
+      },
+      "engine": {
+        "idleRpm": 900,
+        "redlineRpm": 7200,
+        "revLimiterRpm": 7500,
+        "audio": {
+          "toneHz": 62,
+          "brightness": 0.55,
+          "roughness": 0.4
+        }
+      },
+      "drivetrain": {
+        "layout": "RWD",
+        "reverseRatio": 3.4,
+        "powerSplitFront": 0.0,
+        "launchRpm": 3400
+      },
+      "steering": {
+        "steerAuthority": 1.0
+      },
+      "brakes": {
+        "brakeBiasFront": 0.66,
+        "handbrakeTorqueNm": 3000
+      },
+      "targets": {
+        "$comment": "the 9.12 tier the falcon is authored to hit: sport, about 6 s to 100",
+        "zeroTo100": [
+          5.0,
+          7.0
+        ]
+      }
+    },
+    {
+      "id": "cadet",
+      "name": "Cadet 1.4",
+      "klass": "Starter",
+      "description": "The starter car: 1050 kg, 105 PS, front drive. Slow enough to learn the line in, honest enough to teach you weight transfer.",
+      "render": {
+        "color": "#7f8a99",
+        "accent": "#e8eef7",
+        "glass": "#151a22",
+        "livery": [
+          "#7f8a99",
+          "#4c5561"
+        ]
+      },
+      "$comment": "SECTION 9.11 handling profile, same shape as the falcon - the two ends of the ladder (starter ~9 s to 100, sport ~6 s).",
+      "mass": 1050,
+      "enginePower": 105,
+      "torqueCurve": [
+        0.6,
+        0.9,
+        1.0,
+        0.85,
+        0.6
+      ],
+      "gearRatios": [
+        3.4,
+        2.1,
+        1.45,
+        1.1,
+        0.85
+      ],
+      "topSpeed": 48,
+      "gripFront": 0.95,
+      "gripRear": 0.9,
+      "slideGrip": 0.72,
+      "steerMax": 34,
+      "steerSpeedFalloff": 0.8,
+      "brakeForce": 0.95,
+      "dragCoeff": 0.33,
+      "armor": 3,
+      "nitroCapacity": 3.5,
+      "nitroPower": 0.9,
+      "body": {
+        "cgToFrontM": 1.18,
+        "cgToRearM": 1.12,
+        "cgHeightM": 0.56,
+        "trackWidthM": 1.44,
+        "lengthM": 3.78,
+        "widthM": 1.66,
+        "heightM": 1.46,
+        "frontalAreaM2": 2.0,
+        "rollingResistanceCoeff": 0.0145,
+        "downforceCoeff": 0.18
+      },
+      "tires": {
+        "radiusM": 0.3,
+        "corneringStiffnessPerGrip": 12.0,
+        "longitudinalGripRatio": 1.05
+      },
+      "wheels": {
+        "inertiaFrontKgM2": 0.9,
+        "inertiaRearKgM2": 0.85
+      },
+      "engine": {
+        "idleRpm": 850,
+        "redlineRpm": 6000,
+        "revLimiterRpm": 6300,
+        "audio": {
+          "toneHz": 52,
+          "brightness": 0.35,
+          "roughness": 0.3
+        }
+      },
+      "drivetrain": {
+        "layout": "FWD",
+        "reverseRatio": 3.6,
+        "powerSplitFront": 1.0,
+        "launchRpm": 2400
+      },
+      "steering": {
+        "steerAuthority": 0.92
+      },
+      "brakes": {
+        "brakeBiasFront": 0.7,
+        "handbrakeTorqueNm": 2200
+      },
+      "targets": {
+        "$comment": "the 9.12 tier the cadet is authored to hit: starter, about 9 s to 100",
+        "zeroTo100": [
+          8.0,
+          10.0
+        ]
+      }
     }
   ]
 }

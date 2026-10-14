@@ -293,6 +293,16 @@ const TUNING_NUMBERS = [
   'traffic.respawnSpeedMs',
   'traffic.respawnLockoutSeconds',
   'traffic.decorCooldownScale',
+  // 9.11 handling-profile conversion + 9.12 feel targets
+  'profile.yawInertiaFactor',
+  'profile.brakeTorquePerKgNm',
+  'profile.frontalAreaM2',
+  'profile.topSpeedRpmPct',
+  'profile.steerFalloffRefKph',
+  'profile.steerMinLockPct',
+  'profile.armorRatingBase',
+  'profile.powerToKw',
+  'world.minRadiusToWidth',
   'steering.assistFullErrorDeg',
   'steering.assistReleasePerSecond',
   'steering.assistMinInput',
@@ -318,7 +328,7 @@ const TUNING_FLAGS = [
   'traffic.enabled'
 ];
 
-const TUNING_ARRAYS = ['steering.speedSteerCurve', 'assists.difficulty.levels'];
+const TUNING_ARRAYS = ['steering.speedSteerCurve', 'assists.difficulty.levels', 'profile.curveRpmPct'];
 const TUNING_KEYED_NUMBERS = ['damage.zoneBias'];
 
 const CAR_NUMBERS = [
@@ -386,6 +396,172 @@ const AUDIO_NUMBERS = [
   'surface.volumeAtFullSlip',
   'surface.windVolume'
 ];
+
+/* ------------------------------------------------------------------ *
+ * SECTION 9.11 - the per-car handling profile
+ *
+ * A car can be authored as a handling profile: the handful of numbers a
+ * designer actually tunes (mass, engine power, torque curve shape, gear
+ * ratios, top speed, front/rear grip, slide grip, steering lock and falloff,
+ * brake force, drag, armor, nitro capacity). Those are authored at the top
+ * level of the car - exactly the shape in the spec - or inside a "profile"
+ * block, and are converted ONCE here into the internal model:
+ *
+ *   mass              -> body.massKg (real kg)
+ *   enginePower       -> a torque curve scaled so peak power matches (kW)
+ *   torqueCurve       -> 5 shape factors across idle..redline
+ *   gearRatios        -> drivetrain.gearRatios
+ *   topSpeed          -> drivetrain.finalDrive solved so top gear redlines there
+ *   gripFront/Rear    -> tires.gripFront / gripRear (friction coefficients)
+ *   slideGrip         -> tires.slideGripRatio
+ *   steerMax          -> steering.maxSteerAngleDeg
+ *   steerSpeedFalloff -> a per-car steering-lock curve (fraction of lock lost
+ *                        at profile.steerFalloffRefKph, floored at steerMinLockPct)
+ *   brakeForce        -> brakes.maxBrakeTorqueNm (mass x profile.brakeTorquePerKgNm)
+ *   dragCoeff         -> body.dragAreaCdA (Cd x profile.frontalAreaM2)
+ *   armor             -> a damage divisor around profile.armorRatingBase
+ *   nitroCapacity     -> nitro.capacity in seconds of boost
+ *
+ * The conversion constants are themselves data (tuning.profile), and every
+ * derived value is kept on the car as `profile` + `armorRating` / `nitro.seconds`
+ * so tools and the debug panel (9.12) can show what the profile produced.
+ * ------------------------------------------------------------------ */
+
+const PROFILE_NUMBERS = [
+  'mass',
+  'enginePower',
+  'topSpeed',
+  'gripFront',
+  'gripRear',
+  'slideGrip',
+  'steerMax',
+  'steerSpeedFalloff',
+  'brakeForce',
+  'dragCoeff',
+  'armor',
+  'nitroCapacity'
+];
+const PROFILE_KEYS = [...PROFILE_NUMBERS, 'torqueCurve', 'gearRatios', 'nitroPower', 'targets'];
+// Every profile key except `armor`, which a classic car also carries (as a
+// damage divisor rather than a rating), so it cannot be a trigger on its own.
+const PROFILE_TRIGGER_KEYS = PROFILE_KEYS.filter((key) => key !== 'armor');
+
+/**
+ * Read the handling profile off a raw car: values in the car's own object win,
+ * the nested "profile" block overrides them, so both spellings work.
+ * @returns {object} only the profile keys that were actually authored, or {} for
+ *   a classic car that does not use a profile at all
+ */
+export function readHandlingProfile(car) {
+  const block = car?.profile && typeof car.profile === 'object' ? car.profile : null;
+  const triggered = Boolean(block) || PROFILE_TRIGGER_KEYS.some((key) => car?.[key] !== undefined);
+  if (!triggered) return {};
+  const out = {};
+  for (const key of PROFILE_KEYS) {
+    if (car?.[key] !== undefined) out[key] = car[key];
+    if (block?.[key] !== undefined) out[key] = block[key];
+  }
+  return out;
+}
+
+/** Is there enough of a profile here to build a car from? */
+const hasProfile = (profile) => PROFILE_TRIGGER_KEYS.some((key) => profile[key] !== undefined);
+
+/**
+ * Apply a handling profile to a (already cloned) car definition, in place.
+ * @param {object} car
+ * @param {object} profile
+ * @param {object} tuning resolved tuning (for tuning.profile + tuning.nitro)
+ */
+function applyHandlingProfile(car, profile, tuning) {
+  const p = tuning.profile;
+  const TAU = Math.PI * 2;
+
+  // --- mass and inertia ------------------------------------------------
+  if (isNum(profile.mass)) car.body.massKg = profile.mass;
+  const lengthM = car.body.lengthM ?? 4.2;
+  const widthM = car.body.widthM ?? 1.8;
+  const inertiaFactor = isNum(car.body.yawInertiaFactor) ? car.body.yawInertiaFactor : p.yawInertiaFactor;
+  car.body.yawInertiaKgM2 = (car.body.massKg * (lengthM * lengthM + widthM * widthM)) / 12 * inertiaFactor;
+
+  // --- tires -----------------------------------------------------------
+  if (isNum(profile.gripFront)) car.tires.gripFront = profile.gripFront;
+  if (isNum(profile.gripRear)) car.tires.gripRear = profile.gripRear;
+  if (isNum(profile.slideGrip)) car.tires.slideGripRatio = profile.slideGrip;
+
+  // --- steering --------------------------------------------------------
+  if (isNum(profile.steerMax)) car.steering.maxSteerAngleDeg = profile.steerMax;
+  if (isNum(profile.steerSpeedFalloff)) {
+    // "fraction of the lock gone at the reference speed", floored so a car can
+    // always make a correction at speed.
+    const atRef = 1 - profile.steerSpeedFalloff;
+    car.steering.falloff = Math.max(p.steerMinLockPct, Math.min(1, atRef));
+    car.steering.falloffRefKph = p.steerFalloffRefKph;
+    car.steering.minLockPct = p.steerMinLockPct;
+  }
+
+  // --- brakes ----------------------------------------------------------
+  if (isNum(profile.brakeForce)) {
+    car.brakes.brakeForce = profile.brakeForce;
+    car.brakes.maxBrakeTorqueNm = car.body.massKg * p.brakeTorquePerKgNm * profile.brakeForce;
+  }
+
+  // --- aero ------------------------------------------------------------
+  if (isNum(profile.dragCoeff)) {
+    const area = isNum(car.body.frontalAreaM2) ? car.body.frontalAreaM2 : p.frontalAreaM2;
+    car.body.dragCoeff = profile.dragCoeff;
+    car.body.dragAreaCdA = profile.dragCoeff * area;
+  }
+
+  // --- gearbox ---------------------------------------------------------
+  if (Array.isArray(profile.gearRatios)) car.drivetrain.gearRatios = [...profile.gearRatios];
+  const ratios = car.drivetrain.gearRatios;
+  const topGear = ratios[ratios.length - 1];
+  const radiusM = car.tires.radiusM ?? 0.33;
+  if (isNum(profile.topSpeed) && isNum(topGear)) {
+    const wheelOmega = profile.topSpeed / radiusM;                       // rad/s at top speed
+    // The quoted top speed is the speed the car reaches in top gear at the rev
+    // limiter (that is the drivetrain's hard ceiling), with topSpeedRpmPct as a
+    // safety factor a designer can dial back.
+    const limiterRpm = (car.engine.revLimiterRpm ?? car.engine.redlineRpm) * (p.topSpeedRpmPct ?? 1);
+    const engineOmega = (limiterRpm * TAU) / 60;
+    car.drivetrain.finalDrive = engineOmega / Math.max(1e-6, wheelOmega * topGear);
+  }
+  if (car.drivetrain.balance == null) car.drivetrain.balance = 0;
+
+  // --- engine: power + curve shape -> torque ---------------------------
+  const shape = Array.isArray(profile.torqueCurve) ? profile.torqueCurve : [0.55, 0.85, 1, 0.9, 0.7];
+  const rpmPoints = p.curveRpmPct.map((pct) => car.engine.idleRpm + (car.engine.redlineRpm - car.engine.idleRpm) * pct);
+  if (isNum(profile.enginePower)) {
+    const omega = rpmPoints.map((rpm) => (rpm * TAU) / 60);
+    const peakPowerPerNm = Math.max(...shape.map((factor, i) => factor * omega[i]));
+    // `enginePower` is authored in metric horsepower (PS) - "310" reads as 310 hp,
+    // which is how a designer quotes a car - and converted here. Set
+    // tuning.profile.powerToKw to 1 to author kilowatts instead.
+    const kW = profile.enginePower * (p.powerToKw ?? 1);
+    const peakTorqueNm = (kW * 1000) / Math.max(1e-6, peakPowerPerNm);
+    car.engine.powerKw = kW;
+    car.engine.powerRating = profile.enginePower;
+    car.engine.torqueCurveNm = rpmPoints.map((rpm, i) => ({ rpm: Math.round(rpm), nm: +(shape[i] * peakTorqueNm).toFixed(2) }));
+  }
+
+  // --- damage + nitro --------------------------------------------------
+  if (isNum(profile.armor)) {
+    car.armorRating = profile.armor;
+    car.armor = p.armorRatingBase / Math.max(0.1, profile.armor);
+  }
+  if (isNum(profile.nitroCapacity)) {
+    const seconds = Math.max(0.5, profile.nitroCapacity);
+    car.nitro = { ...(car.nitro ?? {}), seconds, capacity: seconds * tuning.nitro.drainPerSecond };
+    if (isNum(profile.nitroPower)) car.nitro.power = profile.nitroPower;
+  }
+
+  // `targets` is the 9.12 tier the car was authored to hit - carried through so
+  // tools can hold the car to its own declared target as well as its class.
+  const targets = car.targets ?? car.profile?.targets ?? null;
+  car.profile = Object.freeze({ ...profile, ...(targets ? { targets } : {}) });
+  return car;
+}
 
 /* ------------------------------------------------------------------ *
  * construction
@@ -467,6 +643,30 @@ export function createConfig(raw, options = {}) {
     const where = `cars.json[${rawCar.id ?? '?'}]`;
     const car = structuredClone(rawCar);
     const carProblems = [];
+    // 9.11: a handling profile fills in the model before it is validated, so a
+    // car can be authored as just a profile (plus the geometry it needs).
+    const profile = readHandlingProfile(car);
+    if (hasProfile(profile)) {
+      // A profile may be PARTIAL (the 9.12 tuning panel writes a single value,
+      // and a car can mix a profile with classic blocks): validate and apply
+      // only what is actually authored.
+      for (const key of PROFILE_NUMBERS) {
+        if (profile[key] !== undefined && !isNum(profile[key])) {
+          carProblems.push(`${where}.profile: ${key} must be a number (got ${JSON.stringify(profile[key])})`);
+        }
+      }
+      if (profile.torqueCurve !== undefined) {
+        if (!Array.isArray(profile.torqueCurve) || profile.torqueCurve.length !== 5 || profile.torqueCurve.some((v) => !isNum(v))) {
+          carProblems.push(`${where}.profile: torqueCurve must be 5 numbers (low / mid / peak / high / redline)`);
+        }
+      }
+      if (profile.gearRatios !== undefined) {
+        if (!Array.isArray(profile.gearRatios) || profile.gearRatios.length !== tuning.drivetrain.gearCount || profile.gearRatios.some((v) => !isNum(v))) {
+          carProblems.push(`${where}.profile: gearRatios must be ${tuning.drivetrain.gearCount} numbers`);
+        }
+      }
+      if (!carProblems.length) applyHandlingProfile(car, profile, tuning);
+    }
     checkNumbers(car, CAR_NUMBERS, carProblems, where);
     checkArrays(car, ['drivetrain.gearRatios'], { 'drivetrain.gearRatios': tuning.drivetrain.gearCount }, carProblems, where);
     if (!Array.isArray(car.engine?.torqueCurveNm) || car.engine.torqueCurveNm.length !== 5) {
@@ -518,6 +718,11 @@ export function createConfig(raw, options = {}) {
 
     // Torque curve sorted by rpm so the piecewise-linear lookup is always valid.
     const curve = [...car.engine.torqueCurveNm].sort((a, b) => a.rpm - b.rpm);
+    // Rated power, whether the car came from a 9.11 profile or a classic curve:
+    // the peak of torque x omega over the five points (kW).
+    const peakPowerKw =
+      car.engine.powerKw ??
+      Math.max(...curve.map((point) => ((point.nm * point.rpm * Math.PI * 2) / 60) / 1000)) * tuning.drivetrain.finalDriveEfficiency;
 
     cars.push(
       Object.freeze({
@@ -529,9 +734,18 @@ export function createConfig(raw, options = {}) {
           massFrontKg: body.massKg * massFrontShare,
           massRearKg: body.massKg * massRearShare
         }),
-        engine: Object.freeze({ ...car.engine, torqueCurve: curve, maxTorqueNm: Math.max(...curve.map((p) => p.nm)) }),
+        engine: Object.freeze({
+          ...car.engine,
+          torqueCurve: curve,
+          maxTorqueNm: Math.max(...curve.map((p) => p.nm)),
+          powerKw: peakPowerKw,
+          powerRating: car.engine.powerRating ?? null
+        }),
         nitro: Object.freeze(nitro),
         armor,
+        // what the profile (or the classic blocks) produced, for tools + HUD
+        armorRating: car.armorRating ?? tuning.profile.armorRatingBase / armor,
+        nitroSeconds: car.nitro?.seconds ?? nitro.capacity / tuning.nitro.drainPerSecond,
         drivetrain: Object.freeze({
           ...car.drivetrain,
           ratioTotals,
@@ -574,7 +788,23 @@ export function createConfig(raw, options = {}) {
   // fraction. Interpolated from `steering.speedSteerCurve` here, at load time,
   // so no code has to know the shape of the curve.
   const lockCurve = Array.isArray(tuning.steering?.speedSteerCurve) ? tuning.steering.speedSteerCurve : [];
-  const steerLockPct = (speedMs) => {
+  /**
+   * 9.4 / 9.11: the fraction of the steering lock available at a speed. A car
+   * with a handling profile gets its own single-number curve (steerSpeedFalloff
+   * at steerFalloffRefKph, floored at steerMinLockPct); everything else follows
+   * the global speedSteerCurve.
+   *
+   * @param {number} speedMs
+   * @param {object} [carDef] the car, when the caller has one
+   */
+  const steerLockPct = (speedMs, carDef = null) => {
+    const falloff = carDef?.steering?.falloff;
+    if (isNum(falloff)) {
+      const ref = Math.max(1, carDef.steering.falloffRefKph ?? tuning.profile.steerFalloffRefKph);
+      const floor = carDef.steering.minLockPct ?? tuning.profile.steerMinLockPct;
+      const t = Math.max(0, Math.min(1, (speedMs * 3.6) / ref));
+      return Math.max(floor, 1 + (falloff - 1) * t);
+    }
     if (!lockCurve.length) return 1;
     const kph = speedMs * 3.6;
     if (kph <= lockCurve[0].speedKph) return lockCurve[0].pct;
@@ -615,14 +845,21 @@ export function createConfig(raw, options = {}) {
     msToMph: (v) => v * 2.23694
   });
 
-  const frozenTuning = Object.freeze(tuning);
+  // The browser build keeps the data unfrozen so the 9.12 tuner panel can write
+  // to it live; tests and tools run frozen + strict, where a typo throws.
+  const tunable = options.freeze === false;
+  const runtimeTuning = tunable ? tuning : Object.freeze(tuning);
   return Object.freeze({
     // Strict mode proxies the un-frozen clone (a proxy over a frozen object breaks
     // the proxy invariants) and is meant for tests: it turns "constant renamed in
     // tuning.json but not in the code" into an exception instead of a NaN.
     tuning: options.strictTuning
       ? strictTuning(structuredClone(raw.tuning), 'tuning.', new Map())
-      : frozenTuning,
+      : runtimeTuning,
+    /** 9.12: true when the data is writable (the browser tuner panel). */
+    tunable,
+    /** A pristine copy of every value, so the tuner can diff and reset. */
+    tuningBaseline: structuredClone(runtimeTuning),
     audio: Object.freeze(audio),
     surfaces,
     surfaceList: [...surfaces.values()],

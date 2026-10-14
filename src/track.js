@@ -158,9 +158,36 @@ export function buildTrack(data, config) {
 
   const decor = (data.decor ?? []).map((item) => ({ ...item }));
 
+  // 9.12: the road must be wider than the corner it is asked to take. A hand
+  // edited or generated centre line that turns tighter than its own half width
+  // folds the inside of the bend (and the walls end up on the tarmac), so it is
+  // reported instead of shipping a track nobody can drive.
+  let minRadiusM = Infinity;
+  for (let i = 0; i < centre.length; i++) {
+    const a = centre[(i - 1 + centre.length) % centre.length];
+    const b = centre[i];
+    const c = centre[(i + 1) % centre.length];
+    const a1 = Math.atan2(b.y - a.y, b.x - a.x);
+    const a2 = Math.atan2(c.y - b.y, c.x - b.x);
+    let da = a2 - a1;
+    while (da > Math.PI) da -= Math.PI * 2;
+    while (da < -Math.PI) da += Math.PI * 2;
+    const step = (Math.hypot(b.x - a.x, b.y - a.y) + Math.hypot(c.x - b.x, c.y - b.y)) / 2;
+    if (Math.abs(da) < 1e-6) continue;
+    minRadiusM = Math.min(minRadiusM, step / Math.abs(da));
+  }
+  const minRadiusFactor = config.tuning.world?.minRadiusToWidth ?? 1.6;
+  if (Number.isFinite(minRadiusM) && minRadiusM < width * minRadiusFactor) {
+    config.warnings.push(
+      `${data.name ?? 'track'}: tightest corner is r${minRadiusM.toFixed(0)} m on a ${width} m road ` +
+        `(below ${minRadiusFactor}x the width) - the inside of the bend will fold`
+    );
+  }
+
   return {
     name: data.name,
     baseSurfaceId: data.baseSurface ?? config.defaultSurfaceId,
+    minRadiusM,
     gateResyncWindow: config.tuning.world.gateResyncWindow ?? 4,
     widthM: width,
     runoffM,

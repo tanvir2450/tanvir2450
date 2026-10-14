@@ -7,6 +7,7 @@
  */
 
 import { createConfig } from './config.js';
+import { Tuner } from './debug.js';
 import { buildTrack } from './track.js';
 import { Renderer } from './render.js';
 import { Hud } from './hud.js';
@@ -61,7 +62,7 @@ export const HUD_ELEMENT_IDS = {
   error: 'error'
 };
 
-const DATA_FILES = ['cars.json', 'surfaces.json', 'tuning.json', 'audio.json', 'track.json'];
+const DATA_FILES = ['cars.json', 'surfaces.json', 'tuning.json', 'audio.json', 'tracks.json'];
 
 export async function loadGameData(base = 'data') {
   const entries = await Promise.all(
@@ -82,6 +83,20 @@ function collectElements(ids) {
   return elements;
 }
 
+/**
+ * 9.12: fetch one circuit by id from data/tracks.json (or its raw file path).
+ * @param {object} catalogue data/tracks.json
+ * @param {string} id track id
+ */
+export async function loadTrackFile(catalogue, id, base = 'data') {
+  const entry = (catalogue?.tracks ?? []).find((t) => t.id === id) ?? (catalogue?.tracks ?? [])[0];
+  if (!entry) throw new Error('data/tracks.json lists no circuits');
+  const file = entry.file ?? `${base}/${entry.id}.json`;
+  const response = await fetch(file, { cache: 'no-cache' });
+  if (!response.ok) throw new Error(`could not load ${file} (${response.status})`);
+  return { entry, json: await response.json() };
+}
+
 export async function boot() {
   const els = collectElements(HUD_ELEMENT_IDS);
   const setLoadingNote = (text) => {
@@ -91,19 +106,50 @@ export async function boot() {
   try {
     setLoadingNote('loading data/cars.json …');
     const data = await loadGameData('data');
-    const config = createConfig({ cars: data.cars, surfaces: data.surfaces, tuning: data.tuning, audio: data.audio });
-    for (const warning of config.warnings) console.warn('[config]', warning);
+    // 9.12: the browser build keeps the data writable so the tuning panel can
+    // change it live; tests and tools stay frozen + strict.
+    const buildConfig = (profilePatch = {}) => {
+      const cars = structuredClone(data.cars);
+      for (const car of cars.cars) {
+        const patch = profilePatch[car.id];
+        if (!patch) continue;
+        for (const [path, value] of Object.entries(patch)) {
+          const keys = path.split('.');
+          const last = keys.pop();
+          const target = keys.reduce((acc, key) => (acc?.[key] ?? (acc[key] = {}), acc[key]), car);
+          target[last] = value;
+          // a profile row edited as a nested model value (tires.gripFront) has
+          // to travel as the 9.11 profile key as well, or the conversion wins
+          if (path === 'tires.gripFront') car.gripFront = value;
+          if (path === 'tires.gripRear') car.gripRear = value;
+          if (path === 'tires.slideGripRatio') car.slideGrip = value;
+          if (path === 'steering.maxSteerAngleDeg') car.steerMax = value;
+          if (path === 'brakes.maxBrakeTorqueNm') car.brakeForce = value / (car.body.massKg * data.tuning.profile.brakeTorquePerKgNm);
+          if (path === 'body.massKg') car.mass = value;
+          if (path === 'body.dragAreaCdA') car.dragCoeff = value / (car.body.frontalAreaM2 ?? data.tuning.profile.frontalAreaM2);
+          if (path === 'nitro.capacity') car.nitroCapacity = value / data.tuning.nitro.drainPerSecond;
+        }
+      }
+      return createConfig({ cars, surfaces: data.surfaces, tuning: data.tuning, audio: data.audio }, { freeze: false });
+    };
 
     setLoadingNote('building the circuit …');
-    const track = buildTrack(data.track, config);
+    const catalogue = data.tracks;
+    const wanted = new URLSearchParams(window.location?.search ?? '').get('track');
+    let trackId = wanted && catalogue.tracks.some((t) => t.id === wanted) ? wanted : catalogue.default ?? catalogue.tracks[0].id;
+    let loaded = await loadTrackFile(catalogue, trackId);
+
+    let config = buildConfig();
+    for (const warning of config.warnings) console.warn('[config]', warning);
+    let track = buildTrack(loaded.json, config);
 
     const renderer = new Renderer(els.game, config, track);
     // 9.4: the analog input sources are configured from data/tuning.json.
     const input = new InputManager(window, config.tuning.input);
     const audio = new AudioEngine(config.audio);
-    const hud = new Hud(els, config, track);
+    let hud = new Hud(els, config, track);
 
-    const game = new Game({ config, track, renderer, hud, input, audio, canvas: els.game });
+    let game = new Game({ config, track, renderer, hud, input, audio, canvas: els.game });
     game.onAssistsChanged = () => {};
 
     /* ---- car picker ------------------------------------------- */
@@ -183,14 +229,88 @@ export async function boot() {
       new ResizeObserver(() => game.onResize()).observe(els.game.parentElement ?? document.body);
     }
 
+    /* ---- 9.12: circuit switching + the tuning panel ------------- */
+    const tuner = new Tuner({
+      config,
+      getGame: () => game,
+      root: document.getElementById('tuner'),
+      onRebuild: (reason) => rebuildWorld(reason)
+    });
+
+    /**
+     * 9.12: rebuild the world in place - a new circuit, or a car whose profile
+     * was just edited in the panel. The wallet, the car choice, the difficulty
+     * and the assists survive; everything derived from the data is rebuilt.
+     */
+    async function rebuildWorld(reason = '') {
+      const keep = {
+        carId: game?.car?.id,
+        coins: game?.economy?.coins,
+        stars: game?.economy?.earned,
+        difficulty: game?.difficulty?.id,
+        assists: game?.assists,
+        paused: game?.paused
+      };
+      game?.stop();
+      config = buildConfig(tuner.profilePatch());
+      const rebuiltTrack = reason === 'circuit' ? buildTrack(loaded.json, config) : buildTrack(loaded.json, config);
+      track = rebuiltTrack;
+      renderer.setTrack?.(track);
+      hud = new Hud(els, config, track);
+      game = new Game({ config, track, renderer, hud, input, audio, canvas: els.game });
+      wireGame();
+      if (keep.carId && config.carById.has(keep.carId)) game.selectCar(keep.carId);
+      if (keep.coins !== undefined) {
+        game.economy.coins = keep.coins;
+        game.economy.earned = keep.stars ?? 0;
+      }
+      if (keep.difficulty) game.setDifficulty(keep.difficulty);
+      if (keep.assists !== undefined) {
+        game.assists = keep.assists;
+        game.car.assistsEnabled = keep.assists;
+      }
+      game.start();
+      tuner.onRebuilt(reason);
+      return game;
+    }
+
+    async function switchCircuit(step = 1) {
+      const list = catalogue.tracks;
+      const index = list.findIndex((t) => t.id === trackId);
+      trackId = list[(index + step + list.length) % list.length].id;
+      loaded = await loadTrackFile(catalogue, trackId);
+      await rebuildWorld('circuit');
+      hud.message(`${track.name} - ${loaded.entry.description}`, 4);
+    }
+
+    function wireGame() {
+      game.onAssistsChanged = () => {};
+      game.onFrame = () => tuner.sample();
+      game.onTunerRequested = () => {
+        const visible = tuner.toggle();
+        game.paused = false;
+        hud.message(visible ? 'Tuning panel: sliders change the car live (K)' : 'Tuning panel closed', 2);
+      };
+      game.onCircuitRequested = () => {
+        switchCircuit(1).catch((error) => console.error(error));
+      };
+      updateCarButtons();
+    }
+
     /* ---- go ---------------------------------------------------- */
+    wireGame();
     game.start();
     els.loading?.classList.add('hidden');
-    hud.message('Apex Loop - set a lap time', 3);
+    hud.message(`${track.name} - set a lap time`, 3);
 
-    // expose for debugging in the console / automated smoke tests
-    window.__apex = { game, config, track, renderer, input, audio, hud };
-    return window.__apex;
+    // Expose the live objects (getters, so a rebuilt world is visible to the
+    // console and to the tests without them holding a stale reference).
+    const apex = { input, audio, tuner, rebuildWorld, switchCircuit };
+    for (const key of ['game', 'config', 'track', 'renderer', 'hud']) {
+      Object.defineProperty(apex, key, { get: () => ({ game, config, track, renderer, hud })[key], enumerable: true });
+    }
+    window.__apex = apex;
+    return apex;
   } catch (error) {
     console.error(error);
     if (els.error) {

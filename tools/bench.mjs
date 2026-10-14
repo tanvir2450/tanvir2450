@@ -109,7 +109,9 @@ function accelTest(config, carId) {
   result.topSpeedKph = +(car.speedMs * 3.6).toFixed(1);
   result.shifts = shifts;
   const def = config.carById.get(car.id);
-  result.gearingTopKph = +(((def.engine.redlineRpm / 60) * 2 * Math.PI * def.tires.radiusM * 3.6) / def.drivetrain.ratioTotals[4]).toFixed(1);
+  // The gearing ceiling is the rev LIMITER in top gear - the redline is where
+  // the engine stops making useful power, not where the wheels stop turning.
+  result.gearingTopKph = +((((def.engine.revLimiterRpm ?? def.engine.redlineRpm) / 60) * 2 * Math.PI * def.tires.radiusM * 3.6) / def.drivetrain.ratioTotals[4]).toFixed(1);
   return result;
 }
 
@@ -252,6 +254,72 @@ function stabilityTest(config, carId, surface, speedKph) {
   };
 }
 
+/**
+ * 9.12 feel target: "a high-speed turn with throttle should drift". Full
+ * throttle through a fast corner - a rear-drive or all-wheel-drive car should
+ * rotate (slip angle up), a front-drive car will plough instead.
+ */
+function powerTest(config, carId, speedKph = 120, steerInput = 0.7) {
+  const car = makeCar(config, carId);
+  const w = createFlatWorld(config, 'asphalt');
+  car.reset({ x: 0, y: 0, heading: 0, speedMs: speedKph / 3.6 });
+  let peakSlip = 0;
+  let spinning = 0;
+  let samples = 0;
+  run(
+    car,
+    w,
+    4,
+    (t) => ({ throttle: t < 0.3 ? 0.3 : 1, brake: 0, steer: t < 0.2 ? 0 : steerInput, handbrake: false }),
+    (c, t) => {
+      if (t < 1) return;
+      samples++;
+      peakSlip = Math.max(peakSlip, Math.abs(c.slipAngleBodyDeg));
+      if (Math.abs(c.slipAngleBodyDeg) > 60) spinning++;
+    }
+  );
+  return {
+    car: car.id,
+    speedKph,
+    steerInput,
+    peakSlipDeg: +peakSlip.toFixed(1),
+    spinFraction: +(spinning / Math.max(1, samples)).toFixed(2)
+  };
+}
+
+/**
+ * 9.12 feel target: "a moderate-speed turn should feel controllable ... a
+ * beginner can still finish the race without spinning out". A gentle, fixed
+ * steering input at a moderate speed must never end in a spin.
+ */
+function moderateTest(config, carId, speedKph = 90, steerInput = 0.35) {
+  const car = makeCar(config, carId);
+  const w = createFlatWorld(config, 'asphalt');
+  car.reset({ x: 0, y: 0, heading: 0, speedMs: speedKph / 3.6 });
+  let maxSlip = 0;
+  let spins = 0;
+  let samples = 0;
+  run(
+    car,
+    w,
+    6,
+    (t, c) => ({ ...holdSpeed(speedKph / 3.6, c), steer: t < 0.3 ? 0 : steerInput }),
+    (c, t) => {
+      if (t < 0.6) return;
+      samples++;
+      maxSlip = Math.max(maxSlip, Math.abs(c.slipAngleBodyDeg));
+      if (Math.abs(c.slipAngleBodyDeg) > 45 || Math.abs(c.yawRate) > 2.2) spins++;
+    }
+  );
+  return {
+    car: car.id,
+    speedKph,
+    steerInput,
+    maxSlipDeg: +maxSlip.toFixed(1),
+    spinFraction: +(spins / Math.max(1, samples)).toFixed(2)
+  };
+}
+
 /** Standing start, full lock, full throttle: can it do a donut? */
 function donutTest(config, carId) {
   const car = makeCar(config, carId);
@@ -291,6 +359,8 @@ async function main() {
     corner80: cornerTest(config, id, 80, 1),
     cornerWet: cornerTest(config, id, 100, 0.8, 'wet'),
     drift: driftTest(config, id),
+    power: powerTest(config, id),
+    moderate: moderateTest(config, id),
     donut: donutTest(config, id),
     wet: stabilityTest(config, id, 'wet', 100),
     gravel: stabilityTest(config, id, 'dirt', 90),
@@ -298,7 +368,7 @@ async function main() {
   }));
 
   if (asJson) {
-    console.log(JSON.stringify({ results, validation: validate(results) }, null, 2));
+    console.log(JSON.stringify({ results, validation: validate(results, config) }, null, 2));
     return;
   }
 
@@ -318,34 +388,71 @@ async function main() {
     console.log(
       `drift : avgSlip ${r.drift.avgSlipDeg}deg peak ${r.drift.peakSlipDeg}deg heldSlide ${(r.drift.heldSlide * 100).toFixed(0)}% spunOut ${r.drift.spunOut} recovered ${r.drift.recovered} end ${r.drift.endSpeedKph}kph`
     );
+    console.log(
+      `power : 120kph steer 0.7 full throttle -> peak slip ${String(r.power.peakSlipDeg).padStart(5)}deg  spin ${(r.power.spinFraction * 100).toFixed(0)}%`
+    );
+    console.log(
+      `easy  :  90kph steer 0.35 -> max slip ${String(r.moderate.maxSlipDeg).padStart(5)}deg  spin ${(r.moderate.spinFraction * 100).toFixed(0)}%`
+    );
     console.log(`donut : maxWheelspin ${r.donut.maxWheelspin}  maxSlip ${r.donut.maxSlipDeg}deg`);
     console.log(
       `limit : wet100 spun ${r.wet.spun} (slip ${r.wet.maxSlipDeg} end ${r.wet.endSpeedKph})  gravel90 spun ${r.gravel.spun} (${r.gravel.maxSlipDeg} end ${r.gravel.endSpeedKph})  grass70 spun ${r.grass.spun} (${r.grass.maxSlipDeg})`
     );
   }
   console.log('\nvalidation:');
-  for (const line of validate(results)) console.log('  ' + line);
+  for (const line of validate(results, config)) console.log('  ' + line);
 }
 
-function validate(results) {
+/**
+ * 9.12: every window the cars are held to comes from tuning.feel, so the feel
+ * targets are data - change the target, not the tool.
+ */
+function validate(results, config) {
   const notes = [];
+  const feel = config?.tuning?.feel ?? {};
+  const byClass = (table, klass) => table?.[klass] ?? null;
   for (const r of results) {
     const a = r.accel;
     const id = a.car;
+    const def = config?.carById?.get(id);
+    // a profile car may declare the tier it was authored to hit (9.12)
+    const declared = def?.profile?.targets?.zeroTo100 ?? null;
+    const window100 = declared ?? byClass(feel.zeroTo100ByClass, a.klass);
     if (!Number.isFinite(a.zeroTo100)) notes.push(`${id}: never reached 100 km/h`);
     else if (a.zeroTo100 < 1.6) notes.push(`${id}: 0-100 in ${a.zeroTo100.toFixed(2)}s is beyond believable`);
-    else if (a.zeroTo100 > 13) notes.push(`${id}: 0-100 in ${a.zeroTo100.toFixed(2)}s is too slow`);
-    if (r.brake.distanceM < 25) notes.push(`${id}: stops from 100 in ${r.brake.distanceM}m - too much grip`);
-    else if (r.brake.distanceM > 60) notes.push(`${id}: stops from 100 in ${r.brake.distanceM}m - brakes too weak`);
+    else if (window100 && (a.zeroTo100 < window100[0] || a.zeroTo100 > window100[1])) {
+      const what = declared ? 'its declared profile target' : `the ${a.klass} target`;
+      notes.push(`${id}: 0-100 in ${a.zeroTo100.toFixed(2)}s is outside ${what} ${window100[0]}-${window100[1]}s`);
+    }
+    const windowTop = byClass(feel.topSpeedKphByClass, a.klass);
+    if (windowTop && (a.topSpeedKph < windowTop[0] || a.topSpeedKph > windowTop[1])) {
+      notes.push(`${id}: top speed ${a.topSpeedKph} km/h is outside the ${a.klass} target ${windowTop[0]}-${windowTop[1]}`);
+    }
+    if (r.brake.distanceM < (feel.minBrakeM ?? 25)) notes.push(`${id}: stops from 100 in ${r.brake.distanceM}m - too much grip`);
+    else if (r.brake.distanceM > (feel.maxBrakeM ?? 60)) notes.push(`${id}: stops from 100 in ${r.brake.distanceM}m - brakes too weak`);
     if (r.brake.peakG > 1.6) notes.push(`${id}: ${r.brake.peakG}g under braking`);
     for (const c of [r.corner120, r.corner80]) {
-      if (c.latG > 1.75) notes.push(`${id}: ${c.latG}g cornering is not believable`);
-      if (c.latG < 0.5) notes.push(`${id}: only ${c.latG}g at ${c.speedKph} km/h - grip too low`);
+      if (c.latG > (feel.maxLatG ?? 1.75)) notes.push(`${id}: ${c.latG}g cornering is not believable`);
+      if (c.latG < (feel.minLatG ?? 0.5)) notes.push(`${id}: only ${c.latG}g at ${c.speedKph} km/h - grip too low`);
     }
     if (a.topSpeedKph > a.gearingTopKph * 1.02) notes.push(`${id}: top speed above what the gearing allows`);
     if (r.cornerWet.latG > r.corner120.latG) notes.push(`${id}: more grip on wet than dry`);
     if (!Number.isFinite(r.drift.avgSlipDeg)) notes.push(`${id}: NaN in the drift test`);
     if (Number.isNaN(r.donut.maxWheelspin)) notes.push(`${id}: NaN in the donut test`);
+    // 9.12 feel: a moderate turn must stay controllable ...
+    if (r.moderate.spinFraction > 0) {
+      notes.push(`${id}: spins in a moderate ${r.moderate.speedKph} km/h turn (slip ${r.moderate.maxSlipDeg}deg)`);
+    }
+    // ... a high-speed turn on the throttle must rotate the car (not for FWD)
+    const layout = def?.drivetrain?.layout;
+    if (layout !== 'FWD' && r.power.peakSlipDeg < (feel.powerOversteerMinSlipDeg ?? 8)) {
+      notes.push(`${id}: ${layout} car does not drift on power (peak slip ${r.power.peakSlipDeg}deg)`);
+    }
+    // 9.11: a profile car's quoted top speed must be the one it actually reaches
+    const quotedKph = def?.profile?.topSpeed ? def.profile.topSpeed * 3.6 : null;
+    if (quotedKph && Math.abs(a.topSpeedKph - quotedKph) / quotedKph > 0.05) {
+      notes.push(`${id}: reaches ${a.topSpeedKph} km/h but its profile says ${quotedKph.toFixed(0)} km/h`);
+    }
   }
   if (!notes.length) notes.push('all checks passed');
   return notes;

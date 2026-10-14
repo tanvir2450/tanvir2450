@@ -219,6 +219,8 @@ export class Game {
     this.audio?.update(frameSeconds, telemetry, input);
     this.nearMissFlash = Math.max(0, (this.nearMissFlash ?? 0) - frameSeconds);
     this.renderer.speedLinePhase = (this.renderer.speedLinePhase + frameSeconds * 3.2) % (Math.PI * 2);
+    // 9.12: the tuning panel and any other observer tick after the frame.
+    this.onFrame?.(frameSeconds);
   }
 
   /** One fixed physics tick. */
@@ -388,6 +390,14 @@ export class Game {
           if (typeof this.onAssistsChanged === 'function') this.onAssistsChanged(this.assists);
           this.hud?.message(`Assists ${this.assists ? 'on' : 'off'}`);
           break;
+        case 'circuit': {
+          this.onCircuitRequested?.();
+          break;
+        }
+        case 'tuner': {
+          this.onTunerRequested?.();
+          break;
+        }
         case 'difficulty': {
           const level = this.cycleDifficulty();
           this.hud?.message(`Difficulty: ${level.label}${level.assistPct > 0 ? ' - steering help on' : ' - no steering help'}`, 2.4);

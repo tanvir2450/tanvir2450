@@ -170,7 +170,8 @@
     "gridCellM": 8.0,
     "gateSpacingM": 30.0,
     "minGateWidthM": 4.0,
-    "gateResyncWindow": 4
+    "gateResyncWindow": 4,
+    "minRadiusToWidth": 1.6
   },
   "collision": {
     "wallRestitution": 0.28,
@@ -372,5 +373,84 @@
     "tiltDeadZoneDeg": 3.0,
     "tiltFullLockDeg": 22.0,
     "tiltSmoothPerSecond": 8.0
+  },
+  "profile": {
+    "$comment": "SECTION 9.11 - defaults that turn a car handling profile into the internal model (converted once, at load). topSpeedRpmPct 1.0 means the quoted topSpeed is reached at the rev limiter in top gear.",
+    "yawInertiaFactor": 0.83,
+    "brakeTorquePerKgNm": 2.6,
+    "frontalAreaM2": 2.1,
+    "curveRpmPct": [
+      0.08,
+      0.3,
+      0.55,
+      0.78,
+      1.0
+    ],
+    "topSpeedRpmPct": 1.0,
+    "steerFalloffRefKph": 200.0,
+    "steerMinLockPct": 0.18,
+    "armorRatingBase": 4.0,
+    "powerToKw": 0.7355
+  },
+  "feel": {
+    "$comment": "SECTION 9.12 - the targets tools/bench.mjs holds every car to. Class windows are believability bounds; a profile car can also declare profile.targets (the tier it was authored to hit, e.g. the spec's ~6 s sport / ~9 s starter).",
+    "zeroTo100ByClass": {
+      "Starter": [
+        7.5,
+        11.0
+      ],
+      "Sport Compact": [
+        5.0,
+        8.0
+      ],
+      "Sport Coupe": [
+        3.5,
+        7.5
+      ],
+      "Muscle": [
+        4.0,
+        8.0
+      ],
+      "Rally": [
+        3.5,
+        8.0
+      ],
+      "Hyper": [
+        1.8,
+        5.0
+      ]
+    },
+    "topSpeedKphByClass": {
+      "Starter": [
+        140.0,
+        195.0
+      ],
+      "Sport Compact": [
+        190.0,
+        250.0
+      ],
+      "Sport Coupe": [
+        200.0,
+        300.0
+      ],
+      "Muscle": [
+        230.0,
+        295.0
+      ],
+      "Rally": [
+        215.0,
+        290.0
+      ],
+      "Hyper": [
+        290.0,
+        360.0
+      ]
+    },
+    "minLatG": 0.5,
+    "maxLatG": 1.75,
+    "minBrakeM": 25.0,
+    "maxBrakeM": 62.0,
+    "powerOversteerMinSlipDeg": 8.0,
+    "controllableMaxSlipDeg": 25.0
   }
 }

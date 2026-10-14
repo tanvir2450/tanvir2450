@@ -93,6 +93,19 @@ export class StubElement {
     return { x: 0, y: 0, left: 0, top: 0, width: this._clientWidth ?? 1280, height: this._clientHeight ?? 720, right: this._clientWidth ?? 1280, bottom: this._clientHeight ?? 720 };
   }
 
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+    if (name === 'id') this.id = String(value);
+  }
+
+  getAttribute(name) {
+    return this.attributes[name] ?? null;
+  }
+
+  removeAttribute(name) {
+    delete this.attributes[name];
+  }
+
   appendChild(child) {
     child.parentElement = this;
     this.children.push(child);

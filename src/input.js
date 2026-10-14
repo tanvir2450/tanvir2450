@@ -19,8 +19,9 @@
  * letting go centres the wheel instead of snapping it.
  *
  * Keys: W/S or arrows drive, Space handbrake, N nitro, R reset, T assists,
- * Y difficulty, M mute, P pause, H help, G debug vectors, V camera zoom,
- * F repair, O let the autopilot drive, 1-5 pick a car.
+ * Y difficulty, C circuit, K the 9.12 tuning panel (the "debug panel"),
+ * M mute, P pause, H help, G debug vectors, V camera zoom, F repair,
+ * O let the autopilot drive, 1-5 pick a car.
  */
 
 import { clamp, rateApproach } from './mathx.js';
@@ -41,6 +42,8 @@ const KEY_MAP = {
   KeyR: 'reset',
   KeyT: 'assists',
   KeyY: 'difficulty',
+  KeyC: 'circuit',
+  KeyK: 'tuner',
   KeyM: 'mute',
   KeyP: 'pause',
   KeyH: 'help',

@@ -44,6 +44,16 @@ export class Renderer {
     this.resize();
   }
 
+  /**
+   * 9.12: swap the circuit without re-creating the renderer (a rebuilt world
+   * keeps the same canvas, DPR and cached patterns; only the geometry changes).
+   */
+  setTrack(track) {
+    this.track = track;
+    this.roadPath = null; // rebuilt lazily from the new centre line
+    return this;
+  }
+
   resize() {
     const { canvas } = this;
     const rect = canvas.getBoundingClientRect();

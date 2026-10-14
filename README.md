@@ -8,7 +8,9 @@ arcade game to play and like a vehicle model when you measure it.
 On top of the vehicle sit the mechanics the arcade layer needs — speed-sensitive
 steering, front-biased brakes, scored drifts, per-car nitro, mass-driven
 collisions, hit-zone damage and rivals to slipstream past (sections 9.4-9.10
-below) — and every number any of them uses lives in `data/`.
+below) — plus the two things that make all of it tunable: a per-car *handling
+profile* (9.11) that is the whole car in a dozen numbers, and a live tuning panel
+with its own test track (9.12). Every number any of them uses lives in `data/`.
 
 Everything the tires, engine, gearbox and chassis do is data. There is no magic
 number in the engine code: `data/tuning.json` holds the global constants and
@@ -17,9 +19,11 @@ number in the engine code: `data/tuning.json` holds the global constants and
 ```
 npm start          # http://localhost:8000  (zero-dependency static server)
 npm test           # boots the real front-end headless and drives a lap
-                   #   + the 9.4-9.10 mechanics suite
+                   #   + the 9.4-9.12 mechanics/tuning suites
 npm run bench      # measures every car: accel, braking, cornering, drift, limits
-npm run track      # re-generates data/track.json from tools/build-track.mjs
+npm run laps       # the autopilot laps every car (--track grounds, --car falcon)
+npm run track      # rebuilds data/track.json + data/test-track.json
+npm run track:preview   # draws a track to a PNG so you can see the layout
 ```
 
 ## Controls
@@ -35,6 +39,8 @@ npm run track      # re-generates data/track.json from tools/build-track.mjs
 | `R` | reset to the grid |
 | `T` | driving assists on/off |
 | `Y` | difficulty - how much steering help touch players get |
+| `K` | the 9.12 tuning panel (live sliders + "Copy JSON" for the diff) |
+| `C` | switch circuit (Apex Loop / Tuning Grounds) |
 | `O` | demo mode — the autopilot drives, any control takes the car back |
 | `V` | camera zoom (normal / close / wide) |
 | `G` | debug vectors (forces, slip, gate) |
@@ -53,28 +59,34 @@ Measured with `npm run bench` (asphalt, 60 Hz, no assists). These are the
 numbers `tools/bench.mjs` asserts are believable, so they double as a
 regression test for the tire model.
 
-| | Kalos GT | Sabre 240 | Vandal V8 | Terra RX | Vortex 9 |
-| --- | --- | --- | --- | --- | --- |
-| layout | FWD | RWD | RWD | AWD | AWD |
-| mass | 1120 kg | 1320 kg | 1900 kg | 1330 kg | 1090 kg |
-| 0–100 km/h | 6.87 s | 3.97 s | 4.72 s | 3.87 s | 2.05 s |
-| 400 m | 14.67 s | 12.00 s | 12.97 s | 12.15 s | 9.05 s |
-| top speed | 235 km/h | 273 km/h | 258 km/h | 257 km/h | 330 km/h |
-| 100–0 km/h | 39.0 m | 39.9 m | 49.3 m | 42.0 m | 29.3 m |
-| corner 120 km/h, dry | 0.81 g | 0.90 g | 0.74 g | 0.84 g | 1.06 g |
-| corner 80 km/h, full lock | 0.79 g | 0.82 g | 0.69 g | 0.81 g | 0.96 g |
-| corner 100 km/h, wet | 0.60 g | 0.61 g | 0.51 g | spin | 0.71 g |
-| handbrake drift, avg slip | 52° | 33° | 44° | 51° | 37° |
-| donut wheelspin | 0.00 | 0.98 | 0.49 | 0.30 | 0.83 |
-| nitro tank / power | 88 / 0.95x | 104 / 1.05x | 92 / 1.00x | 100 / 1.00x | 122 / 1.15x |
-| armor | 1.00 | 0.95 | 1.25 | 1.10 | 0.90 |
+| | Kalos GT | Sabre 240 | Vandal V8 | Terra RX | Vortex 9 | Falcon GT | Cadet 1.4 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| class | Sport Compact | Sport Coupe | Muscle | Rally | Hyper | Sport Coupe | Starter |
+| layout | FWD | RWD | RWD | AWD | AWD | RWD | FWD |
+| authored as | blocks | blocks | blocks | blocks | blocks | 9.11 profile | 9.11 profile |
+| mass | 1120 kg | 1320 kg | 1900 kg | 1330 kg | 1090 kg | 1250 kg | 1050 kg |
+| 0–100 km/h | 6.87 s | 3.97 s | 4.72 s | 3.87 s | 2.05 s | 5.98 s | 8.98 s |
+| 400 m | 14.67 s | 12.00 s | 12.97 s | 12.15 s | 9.05 s | 14.30 s | 16.70 s |
+| top speed | 235 km/h | 273 km/h | 258 km/h | 257 km/h | 330 km/h | 216 km/h | 170 km/h |
+| 100–0 km/h | 39.0 m | 39.9 m | 49.3 m | 42.0 m | 29.3 m | 42.8 m | 45.1 m |
+| corner 120 km/h, dry | 0.81 g | 0.90 g | 0.74 g | 0.84 g | 1.06 g | 0.85 g | 0.66 g |
+| corner 80 km/h, full lock | 0.79 g | 0.82 g | 0.69 g | 0.81 g | 0.96 g | 0.79 g | 0.66 g |
+| corner 100 km/h, wet | 0.60 g | 0.61 g | 0.51 g | spin | 0.71 g | 0.58 g | 0.45 g |
+| handbrake drift, avg slip | 52° | 33° | 44° | 51° | 37° | 45° | 51° |
+| donut wheelspin | 0.00 | 0.98 | 0.49 | 0.30 | 0.83 | 0.35 | 0.00 |
+| power-on slip, 120 km/h | 3° | 88° | 88° | 43° | 57° | 49° | 11° |
+| nitro tank / power | 88 / 0.95x | 104 / 1.05x | 92 / 1.00x | 100 / 1.00x | 122 / 1.15x | 150 / 1.05x | 105 / 0.90x |
+| armor | 1.00 | 0.95 | 1.25 | 1.10 | 0.90 | 1.00 | 1.33 |
+| autopilot lap (Apex) | 56.10 s | 48.67 s | 51.53 s | 52.05 s | 45.52 s | 47.60 s | 59.62 s |
 
-Read the drift and donut rows as character: the front-drive hatch cannot donut
-(it washes out and drags you straight), the rally car spins on a wet lap because
-it always has drive to the rear, the hyper car brakes at 1.33 g, and the muscle
-car is the one that will bite you on a trailing throttle. The last two rows are
-9.7/9.9 data: the hyper car carries the biggest nitro tank and the thinnest
-armor, the muscle car is the one that shrugs off a hit.
+Read the drift, donut and power-on rows as character: the front-drive hatch and
+the starter cannot donut (they wash out and drag you straight), the rally car
+spins on a wet lap because it always has drive to the rear, the hyper car brakes
+at 1.33 g, and the muscle car is the one that will bite you on a trailing
+throttle. The nitro/armor rows are 9.7/9.9 data (the hyper car carries the
+biggest tank and the thinnest armor, the muscle car shrugs off a hit), and the
+last row is the 9.12 autopilot lap (`npm run laps`) — a quick regression test for
+any handling change.
 
 ## Section 9.1 — Setup
 
@@ -336,15 +348,139 @@ while the slide does:
 * **They can be hit.** A collision with a rival runs 9.8's impulse and 9.9's
   damage on both cars, scaled by `contactDamageScale`.
 
+## Section 9.11 — Per-car handling profiles
+
+A car can be authored as a **handling profile**: the dozen numbers a designer
+actually tunes, in the spec's own shape and units, at the top level of the car
+(or inside a `profile` block — same keys). `config.js` converts it once, at load
+time, into the internal model, and keeps the derived result on the car so tools
+and the tuning panel can show what the profile produced.
+
+```json
+{
+  "id": "falcon", "mass": 1250, "enginePower": 310,
+  "torqueCurve": [0.55, 0.85, 1.0, 0.9, 0.7],
+  "gearRatios": [3.2, 2.2, 1.6, 1.2, 0.95], "topSpeed": 62,
+  "gripFront": 1.05, "gripRear": 0.95, "slideGrip": 0.7,
+  "steerMax": 32, "steerSpeedFalloff": 0.75, "brakeForce": 1.0,
+  "dragCoeff": 0.35, "armor": 4, "nitroCapacity": 5
+}
+```
+
+| profile | becomes | how |
+| --- | --- | --- |
+| `mass` | `body.massKg` | straight through; inertia is derived from the car's own length/width box (`profile.yawInertiaFactor`) |
+| `enginePower` | a 5-point torque curve | author in metric hp (PS) or kW (`profile.powerToKw`); peak power is matched exactly |
+| `torqueCurve` | `engine.torqueCurveNm` | 5 shape factors across idle→redline (low/mid/peak/high/redline) |
+| `gearRatios` | `drivetrain.gearRatios` | straight through |
+| `topSpeed` | `drivetrain.finalDrive` | solved so top gear hits the number at the rev limiter |
+| `gripFront` / `gripRear` | `tires.gripFront/Rear` | tire friction coefficients, then the car's balance is applied as for every other car |
+| `slideGrip` | `tires.slideGripRatio` | how much grip is left once an axle breaks away |
+| `steerMax` | `steering.maxSteerAngleDeg` | the lock |
+| `steerSpeedFalloff` | a per-car lock curve | fraction of the lock gone at `profile.steerFalloffRefKph`, floored at `profile.steerMinLockPct` |
+| `brakeForce` | `brakes.maxBrakeTorqueNm` | `mass x profile.brakeTorquePerKgNm x brakeForce` |
+| `dragCoeff` | `body.dragAreaCdA` | Cd x the car's frontal area |
+| `armor` | the damage divisor | `profile.armorRatingBase / armor`, so a *higher* rating takes *less* damage |
+| `nitroCapacity` | `nitro.capacity` | authored in seconds of boost (x `nitro.drainPerSecond`) |
+
+The car still authors its geometry, engine rpm range, drivetrain layout, wheel
+radius, balance and brake bias — the profile fills in everything a handling
+designer cares about, and a car may set **one** profile value (the 9.12 panel
+does exactly that) or none at all: the five original cars are still authored as
+classic blocks and are untouched by this path.
+
+Two cars in `data/cars.json` are authored as profiles, and they are the two ends
+of the 9.12 feel ladder:
+
+* **Falcon GT** — sport coupé, `enginePower` 310 PS on 1250 kg, RWD, top speed
+  62 m/s (223 km/h): **5.98 s** to 100 km/h. Its spec grip pair (1.05 / 0.95)
+  was measured against this tire model and *spun the car* at 120 km/h (0.4 g,
+  rear axle sliding, radius 19 m) — 310 PS on a 0.95 mu rear axle lights the
+  tires up mid-corner. The car keeps the spec's character and its 310 PS, but
+  the grip pair sits in the model's calibrated band with wide rear tires, and the
+  reason is written into `data/cars.json` next to the values.
+* **Cadet 1.4** — the starter: 105 PS on 1050 kg, FWD, **8.98 s** to 100 km/h,
+  0.66 g, and it cannot donut. It is the car that "can still finish the race
+  without spinning out".
+
+Both declare their own `targets.zeroTo100` window, and `tools/bench.mjs` checks
+the car against *that* (falling back to the windows in `tuning.feel` for every
+other car), which is how "0-100 in about 6 s for sport cars, about 9 s for
+starters" is enforced instead of promised.
+
+## Section 9.12 — Tuning and testing tools
+
+### The tuning panel (`K`)
+
+`src/debug.js`. It shows what you tune against — speed, rpm, gear, slip angle,
+grip utilisation per axle, lateral g, steering angle, surface, nitro, health,
+fps — and has live sliders for the constants, in two groups:
+
+* **Car profile rows** (mass, power, grip front/rear, slide grip, steer lock,
+  balance, brake torque/bias, drag, downforce, final drive, armor, nitro tank):
+  these are the 9.11 inputs, so changing one **rebuilds the world** — a new
+  config from the edited data, a fresh car, the same place on the track. The
+  rebuild is debounced (220 ms) so dragging a slider is smooth, and the wallet,
+  car choice, difficulty and assists survive it.
+* **Global constant rows** (steering rates, slide grip, wheelspin loss, load
+  transfer, drift entry/score, nitro force/drain, restitution, hit-stop, damage
+  scale, near-miss distance, slipstream range, camera follow/zoom, stability
+  aid): the simulation reads these every tick, so they are written straight into
+  the live tuning object. No rebuild, no reload.
+
+**Copy JSON** prints the diff against the values the game booted with, ready to
+paste into `data/tuning.json` (globals) and `data/cars.json` (profiles); *Reset
+all* writes the boot values back. Node keeps the data frozen and strict — a
+typo throws — while the browser build is deliberately writable so the panel can
+do its job.
+
+### The test track (`C`)
+
+`data/test-track.json` — **Tuning Grounds**, 1433 m, generated by
+`tools/build-track.mjs` — holds every situation a car is tuned in, in a known
+order: a 240 m start/finish straight, a fast right hander with a gravel trap, two
+linked S-curves, a tight (r34) hairpin with a wide gravel apron, a back straight
+with a gravel crossing, and a long constant-radius oval turn with a wet section.
+`?track=grounds` in the URL starts there directly.
+
+`tools/laps.mjs` drives every car round it (or the race circuit) with the real
+autopilot and prints lap times, off-track time and a surface histogram — the
+regression test for a handling change. On the grounds the cars spend 3-4 s a lap
+on gravel, wet or oil exactly as intended.
+
+Three things keep the tools honest:
+
+* `tools/render-track.mjs` draws any `data/track.json` to a PNG (dependency-free
+  PNG writer) so a layout can be checked without launching the game;
+* `build-track.mjs` refuses to ship a road that folds: it relaxes the sampled
+  centre line until no corner is tighter than `minRadiusM` (default 2.5x the road
+  width), and the generated track is byte-identical when re-run if nothing
+  changed;
+* `src/track.js` re-checks the shipped centre line against
+  `world.minRadiusToWidth` and warns when a corner is tighter than the road can
+  carry — that check found the fold in the first draft of the test track.
+
+### Feel targets (`tuning.feel`)
+
+| target | measured (worst car) |
+| --- | --- |
+| sport car 0-100 in ~6 s, starter ~9 s | falcon 5.98 s, cadet 8.98 s (declared, and checked) |
+| a moderate turn stays controllable | 90 km/h at 0.35 steer: max slip 18° (kalos), no spins |
+| a high-speed turn on the throttle drifts | 120 km/h full throttle: 49-88° of slip on every RWD/AWD car |
+| a good player can hold a long drift | 33-52° average slip, 62-87 % of the handbrake test held |
+| a beginner can finish without spinning | every car completes the autopilot lap; wet/gravel spins are the loose ones only |
+
 ## Data
 
 | File | What lives there |
 | --- | --- |
 | `data/tuning.json` | every global constant: world/grid, collision, tire model, drivetrain, simulation, assists, skid, camera, debug, plus the 9.4-9.10 mechanics (steering/input, brakes, drift, nitro, damage, traffic, economy) |
-| `data/cars.json` | the five cars in real units: body, inertia, CG, tires, wheels, torque curve, drivetrain, steering, brakes, audio |
+| `data/cars.json` | the seven cars: body, inertia, CG, tires, wheels, torque curve, drivetrain, steering, brakes, audio — or a 9.11 handling profile (falcon, cadet) |
 | `data/surfaces.json` | per-surface grip/drag, skid intensity, particle type, render colours |
 | `data/audio.json` | every WebAudio constant (engine harmonics, dips, limiter gate, screech, wind) |
-| `data/track.json` | the circuit — generated by `tools/build-track.mjs` (edit its `DESIGN` block, then re-run) |
+| `data/tracks.json` | the circuit catalogue (id, file, description) that `C` cycles and `?track=` selects |
+| `data/track.json` | Apex Loop — the race circuit, generated by `tools/build-track.mjs` (edit its `DESIGNS` block, then re-run) |
+| `data/test-track.json` | Tuning Grounds — the 9.12 test track, generated by the same tool |
 
 `config.js` merges the files (including the steering-lock curve, the nitro
 tanks and the damage resistances per car, and the difficulty levels), derives the
@@ -359,7 +495,16 @@ promised: delete a key from the JSON and the app tells you which one.
   for every car, plus `validate()` which fails the run on anything not
   believable (0–100 under 1.6 s, cornering above 1.75 g, more grip on wet than
   dry, a top speed the gearing cannot reach...). `--json` for scripting.
-* `tools/build-track.mjs` — writes `data/track.json` from a design block.
+* `tools/build-track.mjs` — writes the circuits from a design block, relaxing
+  any corner tighter than the road can carry.
+* `tools/render-track.mjs` — a track to PNG, for checking a layout by eye.
+* `tools/laps.mjs` — the autopilot laps every car on any circuit, with lap times,
+  off-track seconds and a surface histogram.
+* `tests/tuning.test.js` — the 9.11 conversion contract (profile in, model out,
+  including that the conversion constants are data) and the 9.12 tools (the panel
+  edits live data, a car rebuild keeps your race, the circuit switch keeps your
+  car, the test track has the corners and surfaces it promises, and a folded
+  track is reported instead of shipped).
 * `tests/mechanics.test.js` — the 9.4-9.10 mechanics, measured: steering lock
   and rates, the analog touch/tilt mapping, brake bias and the handbrake lock
   window, drift scoring/clean exit, nitro force and overheat, two-body collision
@@ -389,6 +534,10 @@ rally car will always find drive and is the fastest way to learn a wet lap.
 `T` toggles the assists (a mild counter-steer and stability aid on top of the
 raw model) for anyone who wants them.
 
+For tuning, `C` over to the Tuning Grounds and press `K`: the panel's car rows
+rebuild the car under you, the global rows change the rules mid-corner, and Copy
+JSON gives you the diff to paste into `data/`.
+
 The arcade layer rewards the same things. Drift scoring wants a *held* slide
 above 15° finished cleanly: bank the points and the car gets a small boost, bail
 out or crash and they are gone, so the fastest line and the showiest line are
@@ -412,6 +561,13 @@ formality.
   with scratches, dents, smoke and fire, but the collision shape never changes.
 * Tilt steering needs a device with a motion sensor and (on iOS) a user gesture
   to grant permission; on a desktop the drag pad and the stick replace it.
+* The tuning panel edits `tuning.json` and the 9.11 profile inputs. The classic
+  blocks a car authors directly (its gear ratios outside a profile, its engine
+  rpm range, its brake bias is exposed but its handbrake torque is not) are
+  edited in the JSON rather than by a slider.
+* A car profile is a *handling* description: the geometry (length, width, CG
+  position, wheel radius) still has to be authored as blocks, since nothing in
+  a handling profile can imply it.
 * The WebAudio layer (engine, tires, impacts, nitro) needs a user gesture
   before the browser will let it start, so the first click or key press is what
   turns the sound on.
