@@ -45,6 +45,9 @@ const seconds = Number(arg('seconds', 10));
 const trackId = arg('track', null);
 const zoom = arg('zoom', null);
 const out = arg('out', path.join(ROOT, '.scratch', `shot-${trackId ?? 'apex'}.png`));
+// --bundle renders the shipped single-file build instead of src/, so the file
+// that ships to a phone is the file that gets checked.
+const useBundle = process.argv.includes('--bundle') || arg('bundle', null) === 'true';
 
 const { setupDom, stubFetch } = await import('../tests/dom-stub.mjs');
 const dom = setupDom();
@@ -74,11 +77,26 @@ const realContextFor = (element, w, h) => {
   return canvas;
 };
 
-const { boot } = await import('../src/boot.js');
-const apex = await boot();
-if (!apex) {
-  console.error('the game failed to boot');
-  process.exit(1);
+let apex;
+if (useBundle) {
+  const { readFileSync: read } = await import('node:fs');
+  const vm = (await import('node:vm')).default;
+  const html = read(path.join(ROOT, 'apex-2d.html'), 'utf8');
+  const start = html.indexOf('<script>');
+  const end = html.lastIndexOf('</script>');
+  if (start < 0 || end < start) throw new Error('apex-2d.html has no inline bundle (run: npm run bundle)');
+  vm.runInThisContext(html.slice(start + '<script>'.length, end).replace(/<\\\/script/gi, '</script'), { filename: 'apex-2d.html' });
+  const deadline = Date.now() + 5000;
+  while (!globalThis.window.__apex && Date.now() < deadline) await new Promise((r) => setTimeout(r, 5));
+  apex = globalThis.window.__apex;
+  if (!apex) throw new Error('the single-file build failed to boot');
+} else {
+  const { boot } = await import('../src/boot.js');
+  apex = await boot();
+  if (!apex) {
+    console.error('the game failed to boot');
+    process.exit(1);
+  }
 }
 const G = () => apex.game;
 
@@ -112,7 +130,7 @@ for (let i = 0; i < frames; i++) {
 writeFileSync(out, await gameCanvas.encode('png'));
 const car = G().car;
 console.log(
-  `${out} - ${G().track.name}, ${(car.speedMs * 3.6).toFixed(0)} kph, slip ${car.slipAngleBodyDeg.toFixed(1)}deg, ` +
+  `${out} - ${useBundle ? 'single-file build · ' : ''}${G().track.name}, ${(car.speedMs * 3.6).toFixed(0)} kph, slip ${car.slipAngleBodyDeg.toFixed(1)}deg, ` +
     `${car.telemetry().engine.gear} gear, surface ${car.currentSurface?.id}, ${frames} frames`
 );
 dom.restore();
