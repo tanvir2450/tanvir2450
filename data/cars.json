@@ -1,0 +1,64 @@
+{
+  "$comment": "Per-car handling profiles — Section 9.11 of docs/SPEC_V2.md. All values in real units (mass kg, topSpeed m/s, steerMax degrees). Never hardcode these in code; tune via the 9.12 debug panel. 'falcon' is the spec reference profile verbatim; the other two are provisional starters derived from the mass examples in 9.8 (1100 kg compact, 1900 kg muscle) and the 9.12 feel targets (0-100 km/h ~9 s starter, ~6 s sport).",
+  "cars": [
+    {
+      "id": "falcon",
+      "mass": 1250,
+      "enginePower": 310,
+      "torqueCurve": [0.55, 0.85, 1.0, 0.9, 0.7],
+      "gearRatios": [3.2, 2.2, 1.6, 1.2, 0.95],
+      "topSpeed": 62,
+      "gripFront": 1.05,
+      "gripRear": 0.95,
+      "slideGrip": 0.7,
+      "steerMax": 32,
+      "steerSpeedFalloff": 0.75,
+      "brakeForce": 1.0,
+      "dragCoeff": 0.35,
+      "armor": 4,
+      "nitroCapacity": 5
+    },
+    {
+      "id": "compact_starter",
+      "mass": 1100,
+      "enginePower": 180,
+      "torqueCurve": [0.6, 0.85, 1.0, 0.88, 0.68],
+      "gearRatios": [3.2, 2.2, 1.6, 1.2, 0.95],
+      "topSpeed": 48,
+      "gripFront": 1.0,
+      "gripRear": 1.0,
+      "slideGrip": 0.7,
+      "steerMax": 32,
+      "steerSpeedFalloff": 0.75,
+      "brakeForce": 0.95,
+      "dragCoeff": 0.38,
+      "armor": 3,
+      "nitroCapacity": 4
+    },
+    {
+      "id": "muscle",
+      "mass": 1900,
+      "enginePower": 420,
+      "torqueCurve": [0.7, 0.95, 1.0, 0.85, 0.6],
+      "gearRatios": [3.2, 2.2, 1.6, 1.2, 0.95],
+      "topSpeed": 58,
+      "gripFront": 1.0,
+      "gripRear": 0.88,
+      "slideGrip": 0.65,
+      "steerMax": 30,
+      "steerSpeedFalloff": 0.7,
+      "brakeForce": 0.9,
+      "dragCoeff": 0.42,
+      "armor": 6,
+      "nitroCapacity": 5
+    }
+  ],
+  "surfaces": {
+    "$comment": "Grip/drag multipliers by surface — Section 9.3 table.",
+    "asphalt": { "grip": 1.0, "drag": 1.0 },
+    "wet": { "grip": 0.7, "drag": 1.0 },
+    "dirt": { "grip": 0.55, "drag": 1.6 },
+    "grass": { "grip": 0.45, "drag": 2.0 },
+    "oil": { "grip": 0.2, "drag": 1.0 }
+  }
+}
