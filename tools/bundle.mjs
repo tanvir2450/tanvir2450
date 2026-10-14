@@ -219,6 +219,9 @@ function __require(id) {
 const __FILES = {
 ${dataFiles.join(',\n')}
 };
+/* a marker the game (and the tests) can read: this is the single-file build,
+ * so a boot failure is not a "you forgot to serve the folder" problem */
+globalThis.__APEX_SINGLE_FILE = true;
 const __nativeFetch = typeof fetch === 'function' ? fetch.bind(globalThis) : null;
 const __offlineFetch = (url, init) => {
   const key = String(url).replace(/^\\.?\\//, '');

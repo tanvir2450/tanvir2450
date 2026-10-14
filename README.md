@@ -38,12 +38,23 @@ modules behind a small `__define`/`__require` loader, embeds the seven
 `data/*.json` files, and swaps `fetch` for an in-memory table keyed by exactly the
 paths the app asks for — `src/` never learns where its data came from.
 
+A phone is not a small desktop, and the camera knows it: the world scale is
+authored for a screen at least `camera.fitWidthPx` (900 px) wide, and anything
+narrower zooms out by `width / fitWidthPx` (floored at `camera.minFitZoom`, 0.4).
+Without it a 390 px portrait screen shows ~17 m of road — under a second of
+warning at 120 kph; with it the same screen shows ~37 m, and the car stays big
+enough to place. Screens at 900 px or more are untouched, byte-for-byte (the
+desktop reference frame in `tools/shot.mjs` still hashes the same), and both
+constants have sliders in the tuning panel while you play.
+
 The single file is what ships, so it is built and tested like an artifact:
 `tests/bundle.test.js` rebuilds it in memory and fails if the committed file
 differs by a byte, then boots the embedded script with no module syntax, no
 `src`/`href` and a `fetch` that counts escapes, drives it for two seconds, presses
 `C` to switch to the test track (offline, from the embedded circuit) and opens the
-tuning panel. `npm test` fails on a stale bundle, so the file cannot silently
+tuning panel. A third test boots it again in a 390 x 844 portrait canvas — the
+markup a thumb needs has to be in the file, the CSS has to offer the buttons to a
+coarse pointer only, and the camera has to still show enough road to drive. `npm test` fails on a stale bundle, so the file cannot silently
 drift from the source. 364 KB — smaller than the multi-request dev path. Keep
 using `npm start` while iterating: the dev server picks up an edit with a reload,
 the bundle needs `npm run bundle`.
@@ -496,7 +507,7 @@ Three things keep the tools honest:
 
 | File | What lives there |
 | --- | --- |
-| `data/tuning.json` | every global constant: world/grid, collision, tire model, drivetrain, simulation, assists, skid, camera, debug, plus the 9.4-9.10 mechanics (steering/input, brakes, drift, nitro, damage, traffic, economy) |
+| `data/tuning.json` | every global constant: world/grid, collision, tire model, drivetrain, simulation, assists, skid, camera (including the `fitWidthPx`/`minFitZoom` screen fit), debug, plus the 9.4-9.10 mechanics (steering/input, brakes, drift, nitro, damage, traffic, economy) |
 | `data/cars.json` | the seven cars: body, inertia, CG, tires, wheels, torque curve, drivetrain, steering, brakes, audio — or a 9.11 handling profile (falcon, cadet) |
 | `data/surfaces.json` | per-surface grip/drag, skid intensity, particle type, render colours |
 | `data/audio.json` | every WebAudio constant (engine harmonics, dips, limiter gate, screech, wind) |

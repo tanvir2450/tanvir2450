@@ -188,6 +188,8 @@ const TUNING_NUMBERS = [
   'camera.maxZoom',
   'camera.leadDistanceM',
   'camera.shakeDecayPerSecond',
+  'camera.fitWidthPx',
+  'camera.minFitZoom',
   'audio.screechUsageThreshold',
   'audio.windStartSpeedMs',
   'audio.windFullSpeedMs',

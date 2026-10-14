@@ -2,7 +2,9 @@
  * camera.js - chase camera: follows the car with a speed-dependent zoom and a
  * little lead in the direction of travel, and shakes on impacts.
  *
- * The camera works in metres; the renderer converts to pixels once.
+ * The camera works in metres; the renderer converts to pixels once, and the
+ * zoom is fitted to the screen (`camera.fitWidthPx`) so a phone in portrait
+ * sees a useful width of road instead of a keyhole.
  */
 
 import { clamp, expApproach, lerp, mulberry32, smoothstep } from './mathx.js';
@@ -33,6 +35,20 @@ export class Camera {
     this.viewport.height = height;
   }
 
+  /**
+   * Screen fit (phone): on a narrow canvas the authored world scale shows far
+   * less road - a 390 px screen in portrait would show ~17 m, under a second of
+   * warning at 120 kph. Screens at least `camera.fitWidthPx` wide are untouched
+   * (this is exactly 1). Read every frame rather than cached, so the tuning
+   * panel's slider takes effect while you drag it.
+   */
+  get fitZoom() {
+    const t = this.tuning;
+    const factor = t.fitWidthPx > 0 ? this.viewport.width / t.fitWidthPx : 1;
+    const minFit = t.minFitZoom > 0 ? t.minFitZoom : 1;
+    return clamp(factor, minFit, 1);
+  }
+
   reset(car) {
     this.x = car.x;
     this.y = car.y;
@@ -51,7 +67,10 @@ export class Camera {
     // Zoom out with speed so fast sections stay readable.
     const speedPct = smoothstep(0, 70, car.speedMs);
     const targetZoom = lerp(t.baseZoom, t.baseZoom * (1 - t.speedZoomPct), speedPct) * this.zoomPreference * this.boostZoom;
-    this.zoom = expApproach(this.zoom, clamp(targetZoom, t.minZoom, t.maxZoom), 2.5, dt);
+    // clamped in the authored range first, then fitted to the screen, so a
+    // phone's zoom-out is not swallowed by minZoom
+    const shipped = clamp(targetZoom, t.minZoom, t.maxZoom);
+    this.zoom = expApproach(this.zoom, shipped * this.fitZoom, 2.5, dt);
 
     if (this.shake > 0) {
       this.shake = Math.max(0, this.shake - t.shakeDecayPerSecond * dt);

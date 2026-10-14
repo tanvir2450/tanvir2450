@@ -240,7 +240,9 @@
     "minZoom": 0.5,
     "maxZoom": 1.05,
     "leadDistanceM": 0.28,
-    "shakeDecayPerSecond": 6
+    "shakeDecayPerSecond": 6,
+    "fitWidthPx": 900,
+    "minFitZoom": 0.4
   },
   "audio": {
     "screechUsageThreshold": 0.85,

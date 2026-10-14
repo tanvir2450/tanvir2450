@@ -315,7 +315,10 @@ export async function boot() {
     console.error(error);
     if (els.error) {
       els.error.hidden = false;
-      els.error.textContent = `Apex 2D failed to start\n\n${error?.message ?? error}\n\nIf you opened index.html directly, serve the folder instead: npm start`;
+      const advice = globalThis.__APEX_SINGLE_FILE
+        ? 'The single-file build (apex-2d.html) failed to boot - the message above is the bug, not a missing server.'
+        : 'If you opened index.html directly, serve the folder instead: npm start';
+      els.error.textContent = `Apex 2D failed to start\n\n${error?.message ?? error}\n\n${advice}`;
     }
     return null;
   }

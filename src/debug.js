@@ -80,6 +80,8 @@ export const TUNER_ROWS = [
   { group: 'tuning', path: 'traffic.slipstreamRangeM', label: 'slipstream', unit: 'm', min: 10, max: 70, step: 1 },
   { group: 'tuning', path: 'camera.followLerpPerSecond', label: 'cam follow', unit: '/s', min: 1, max: 20, step: 0.5 },
   { group: 'tuning', path: 'camera.speedZoomPct', label: 'speed zoom', unit: '', min: 0, max: 0.5, step: 0.01 },
+  { group: 'tuning', path: 'camera.fitWidthPx', label: 'screen fit', unit: 'px', min: 0, max: 1600, step: 20 },
+  { group: 'tuning', path: 'camera.minFitZoom', label: 'fit floor', unit: '', min: 0.2, max: 1, step: 0.05 },
   { group: 'tuning', path: 'assists.stabilityAssistStrength', label: 'stability aid', unit: '', min: 0, max: 0.8, step: 0.01 }
 ];
 
