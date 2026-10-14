@@ -5,7 +5,8 @@
  * is how the handling stays consistent between devices.
  *
  * Keys: W/S or arrows drive, Space handbrake, R reset, T assists, M mute,
- * P pause, H help, G debug vectors, V camera zoom, O let the autopilot drive.
+ * P pause, H help, G debug vectors, V camera zoom, O let the autopilot drive,
+ * 1-5 pick a car.
  */
 
 const KEY_MAP = {
@@ -26,7 +27,12 @@ const KEY_MAP = {
   KeyH: 'help',
   KeyG: 'debug',
   KeyV: 'camera',
-  KeyO: 'autopilot'
+  KeyO: 'autopilot',
+  Digit1: 'car1',
+  Digit2: 'car2',
+  Digit3: 'car3',
+  Digit4: 'car4',
+  Digit5: 'car5'
 };
 
 export class InputManager {

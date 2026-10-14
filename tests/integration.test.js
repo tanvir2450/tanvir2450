@@ -67,7 +67,17 @@ test('the whole game boots and runs frames', async () => {
     dom.keyup('ArrowLeft');
     dom.keyup('ArrowUp');
 
-    // 3. the demo mode (O) must drive the car by itself, through the real loop
+    // 3. the number keys must swap cars
+    dom.keydown('Digit3');
+    dom.keyup('Digit3');
+    runFrames(2);
+    assert.equal(game.car.id, config.cars[2].id, 'pressing 3 did not select the third car');
+    dom.keydown('Digit1');
+    dom.keyup('Digit1');
+    runFrames(2);
+    assert.equal(game.car.id, config.cars[0].id, 'pressing 1 did not select the first car');
+
+    // 4. the demo mode (O) must drive the car by itself, through the real loop
     game.reset();
     dom.keydown('KeyO');
     dom.keyup('KeyO');
@@ -84,7 +94,7 @@ test('the whole game boots and runs frames', async () => {
     dom.keyup('ArrowUp');
     assert.equal(game.demo, false, 'touching the controls should take the car back from the demo');
 
-    // 4. the tooling autopilot, driven through the keyboard path, must lap too
+    // 5. the tooling autopilot, driven through the keyboard path, must lap too
     const { Autopilot } = await import('../src/ai.js');
     const autopilot = new Autopilot(track, config);
     game.reset();
@@ -118,7 +128,7 @@ test('the whole game boots and runs frames', async () => {
     assert.ok(laps >= 1, `autopilot did not complete a lap (odometer ${Math.round(game.car.odometerM)} m)`);
     assert.ok(game.lapTimer.bestLap > 20 && game.lapTimer.bestLap < 400, `implausible lap time ${game.lapTimer.bestLap}`);
 
-    // 5. the HUD received numbers
+    // 6. the HUD received numbers
     assert.ok(Number(apex.hud.els.speed.textContent) >= 0, 'speed readout was never updated');
     assert.notEqual(apex.hud.els.lapTime.textContent, '');
   } finally {

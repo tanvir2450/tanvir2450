@@ -231,8 +231,18 @@ export class Game {
           this.autopilot.reset();
           this.hud?.message(this.demo ? 'Demo: autopilot driving (O to take over)' : 'You have the wheel', this.demo ? 3.2 : 2);
           break;
+        case 'car1':
+        case 'car2':
+        case 'car3':
+        case 'car4':
+        case 'car5': {
+          const index = Number(action.slice(3)) - 1;
+          const def = this.config.cars[index];
+          if (def) this.selectCar(def.id);
+          break;
+        }
         case 'help':
-          this.hud?.message('W/S or arrows drive, Space handbrake, R reset, T assists, M mute, O demo', 5);
+          this.hud?.message('W/S or arrows drive, Space handbrake, R reset, T assists, M mute, O demo, V camera, 1-5 car', 5);
           break;
         default:
           break;
