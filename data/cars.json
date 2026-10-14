@@ -1,0 +1,490 @@
+{
+  "$comment": "SECTION 9.1/9.2/9.3 - Car definitions. ALL values in real units: kg, Nm, m, m/s, N, degrees. Pixel conversion happens once in src/config.js (pxPerMeter). Simulator/tuning constants live in tuning.json; surface multipliers in surfaces.json.",
+  "cars": [
+    {
+      "id": "kalos_gt",
+      "name": "Kalos GT",
+      "klass": "Sport Compact",
+      "description": "Front-drive hot hatch. Safe, forgiving, lifts a rear wheel and pushes wide when you ask too much. The easiest car to learn the track in.",
+      "render": {
+        "color": "#2f6df6",
+        "accent": "#dbe6ff",
+        "glass": "#101a2c",
+        "livery": [
+          "#2f6df6",
+          "#1b47a8"
+        ]
+      },
+      "body": {
+        "massKg": 1180,
+        "yawInertiaKgM2": 1750,
+        "cgToFrontM": 1.42,
+        "cgToRearM": 1.16,
+        "cgHeightM": 0.58,
+        "trackWidthM": 1.52,
+        "lengthM": 4.06,
+        "widthM": 1.78,
+        "heightM": 1.42,
+        "dragAreaCdA": 0.72,
+        "rollingResistanceCoeff": 0.0135,
+        "downforceCoeff": 0.35
+      },
+      "tires": {
+        "radiusM": 0.315,
+        "gripFront": 1.12,
+        "gripRear": 1.05,
+        "corneringStiffnessPerGrip": 12.5,
+        "slideGripRatio": 0.7,
+        "longitudinalGripRatio": 1.06
+      },
+      "wheels": {
+        "inertiaFrontKgM2": 1.1,
+        "inertiaRearKgM2": 1.0
+      },
+      "engine": {
+        "idleRpm": 820,
+        "redlineRpm": 6800,
+        "revLimiterRpm": 7000,
+        "torqueCurveNm": [
+          {
+            "rpm": 900,
+            "nm": 210
+          },
+          {
+            "rpm": 2400,
+            "nm": 290
+          },
+          {
+            "rpm": 3600,
+            "nm": 320
+          },
+          {
+            "rpm": 4800,
+            "nm": 295
+          },
+          {
+            "rpm": 6300,
+            "nm": 225
+          }
+        ],
+        "audio": {
+          "toneHz": 58,
+          "brightness": 0.42,
+          "roughness": 0.35
+        }
+      },
+      "drivetrain": {
+        "layout": "FWD",
+        "gearRatios": [
+          3.45,
+          2.05,
+          1.42,
+          1.09,
+          0.86
+        ],
+        "reverseRatio": 3.6,
+        "finalDrive": 3.85,
+        "powerSplitFront": 1.0,
+        "balance": -0.15,
+        "launchRpm": 3000
+      },
+      "steering": {
+        "maxSteerAngleDeg": 34,
+        "steerAuthority": 0.95
+      },
+      "brakes": {
+        "maxBrakeTorqueNm": 3200,
+        "brakeBiasFront": 0.68,
+        "handbrakeTorqueNm": 2600
+      }
+    },
+    {
+      "id": "sabre_240",
+      "name": "Sabre 240",
+      "klass": "Sport Coupe",
+      "description": "Rear-drive coupe on sticky tires. Balanced with a slight oversteer bias - lift off and the tail steps out. Rewards smooth inputs.",
+      "render": {
+        "color": "#e63946",
+        "accent": "#fff1e6",
+        "glass": "#1a1116",
+        "livery": [
+          "#e63946",
+          "#8f1d27"
+        ]
+      },
+      "body": {
+        "massKg": 1320,
+        "yawInertiaKgM2": 2200,
+        "cgToFrontM": 1.32,
+        "cgToRearM": 1.4,
+        "cgHeightM": 0.52,
+        "trackWidthM": 1.56,
+        "lengthM": 4.4,
+        "widthM": 1.82,
+        "heightM": 1.29,
+        "dragAreaCdA": 0.68,
+        "rollingResistanceCoeff": 0.013,
+        "downforceCoeff": 0.5
+      },
+      "tires": {
+        "radiusM": 0.325,
+        "gripFront": 1.32,
+        "gripRear": 1.3,
+        "corneringStiffnessPerGrip": 13.2,
+        "slideGripRatio": 0.72,
+        "longitudinalGripRatio": 1.06
+      },
+      "wheels": {
+        "inertiaFrontKgM2": 1.2,
+        "inertiaRearKgM2": 1.2
+      },
+      "engine": {
+        "idleRpm": 900,
+        "redlineRpm": 7600,
+        "revLimiterRpm": 7800,
+        "torqueCurveNm": [
+          {
+            "rpm": 1000,
+            "nm": 280
+          },
+          {
+            "rpm": 3000,
+            "nm": 390
+          },
+          {
+            "rpm": 4600,
+            "nm": 420
+          },
+          {
+            "rpm": 6000,
+            "nm": 390
+          },
+          {
+            "rpm": 7400,
+            "nm": 300
+          }
+        ],
+        "audio": {
+          "toneHz": 66,
+          "brightness": 0.58,
+          "roughness": 0.3
+        }
+      },
+      "drivetrain": {
+        "layout": "RWD",
+        "gearRatios": [
+          3.32,
+          2.1,
+          1.55,
+          1.2,
+          0.97
+        ],
+        "reverseRatio": 3.4,
+        "finalDrive": 3.55,
+        "powerSplitFront": 0.0,
+        "balance": 0.3,
+        "launchRpm": 3600
+      },
+      "steering": {
+        "maxSteerAngleDeg": 36,
+        "steerAuthority": 1.0
+      },
+      "brakes": {
+        "maxBrakeTorqueNm": 3600,
+        "brakeBiasFront": 0.64,
+        "handbrakeTorqueNm": 3000
+      }
+    },
+    {
+      "id": "vandal_v8",
+      "name": "Vandal V8",
+      "klass": "Muscle",
+      "description": "Big, heavy and enormously torquey. Weight transfer is dramatic, the rear tires light up in the first three gears, and it does not want to stop turning once it starts.",
+      "render": {
+        "color": "#f2840c",
+        "accent": "#2b2b2b",
+        "glass": "#241a10",
+        "livery": [
+          "#f2840c",
+          "#a35206"
+        ]
+      },
+      "body": {
+        "massKg": 1700,
+        "yawInertiaKgM2": 3200,
+        "cgToFrontM": 1.45,
+        "cgToRearM": 1.5,
+        "cgHeightM": 0.56,
+        "trackWidthM": 1.62,
+        "lengthM": 5.02,
+        "widthM": 1.92,
+        "heightM": 1.38,
+        "dragAreaCdA": 0.95,
+        "rollingResistanceCoeff": 0.016,
+        "downforceCoeff": 0.3
+      },
+      "tires": {
+        "radiusM": 0.345,
+        "gripFront": 1.26,
+        "gripRear": 1.2,
+        "corneringStiffnessPerGrip": 11.0,
+        "slideGripRatio": 0.66,
+        "longitudinalGripRatio": 1.1
+      },
+      "wheels": {
+        "inertiaFrontKgM2": 1.45,
+        "inertiaRearKgM2": 1.45
+      },
+      "engine": {
+        "idleRpm": 750,
+        "redlineRpm": 6200,
+        "revLimiterRpm": 6400,
+        "torqueCurveNm": [
+          {
+            "rpm": 800,
+            "nm": 420
+          },
+          {
+            "rpm": 2200,
+            "nm": 560
+          },
+          {
+            "rpm": 3600,
+            "nm": 590
+          },
+          {
+            "rpm": 4800,
+            "nm": 540
+          },
+          {
+            "rpm": 6100,
+            "nm": 430
+          }
+        ],
+        "audio": {
+          "toneHz": 40,
+          "brightness": 0.3,
+          "roughness": 0.62
+        }
+      },
+      "drivetrain": {
+        "layout": "RWD",
+        "gearRatios": [
+          2.66,
+          1.78,
+          1.3,
+          1.0,
+          0.8
+        ],
+        "reverseRatio": 2.9,
+        "finalDrive": 3.42,
+        "powerSplitFront": 0.0,
+        "balance": 0.55,
+        "launchRpm": 2600
+      },
+      "steering": {
+        "maxSteerAngleDeg": 36,
+        "steerAuthority": 0.88
+      },
+      "brakes": {
+        "maxBrakeTorqueNm": 4600,
+        "brakeBiasFront": 0.62,
+        "handbrakeTorqueNm": 3200
+      }
+    },
+    {
+      "id": "terra_rx",
+      "name": "Terra RX",
+      "klass": "Rally",
+      "description": "All-wheel drive and long travel. Grip on loose surfaces is its superpower, short gearing keeps it on the boil, and the handbrake turns corners into playgrounds.",
+      "render": {
+        "color": "#12b3a6",
+        "accent": "#f4f7f6",
+        "glass": "#0d2224",
+        "livery": [
+          "#12b3a6",
+          "#0a6f68"
+        ]
+      },
+      "body": {
+        "massKg": 1330,
+        "yawInertiaKgM2": 1900,
+        "cgToFrontM": 1.35,
+        "cgToRearM": 1.27,
+        "cgHeightM": 0.62,
+        "trackWidthM": 1.6,
+        "lengthM": 4.12,
+        "widthM": 1.8,
+        "heightM": 1.5,
+        "dragAreaCdA": 0.8,
+        "rollingResistanceCoeff": 0.017,
+        "downforceCoeff": 0.4
+      },
+      "tires": {
+        "radiusM": 0.34,
+        "gripFront": 1.1,
+        "gripRear": 1.06,
+        "corneringStiffnessPerGrip": 12.0,
+        "slideGripRatio": 0.78,
+        "longitudinalGripRatio": 1.02
+      },
+      "wheels": {
+        "inertiaFrontKgM2": 1.3,
+        "inertiaRearKgM2": 1.3
+      },
+      "engine": {
+        "idleRpm": 950,
+        "redlineRpm": 7200,
+        "revLimiterRpm": 7400,
+        "torqueCurveNm": [
+          {
+            "rpm": 900,
+            "nm": 275
+          },
+          {
+            "rpm": 2600,
+            "nm": 385
+          },
+          {
+            "rpm": 3800,
+            "nm": 420
+          },
+          {
+            "rpm": 5200,
+            "nm": 395
+          },
+          {
+            "rpm": 6600,
+            "nm": 315
+          }
+        ],
+        "audio": {
+          "toneHz": 62,
+          "brightness": 0.5,
+          "roughness": 0.5
+        }
+      },
+      "drivetrain": {
+        "layout": "AWD",
+        "gearRatios": [
+          3.05,
+          2.05,
+          1.5,
+          1.15,
+          0.9
+        ],
+        "reverseRatio": 3.3,
+        "finalDrive": 3.62,
+        "powerSplitFront": 0.42,
+        "balance": 0.12,
+        "launchRpm": 4200
+      },
+      "steering": {
+        "maxSteerAngleDeg": 36,
+        "steerAuthority": 1.05
+      },
+      "brakes": {
+        "maxBrakeTorqueNm": 3600,
+        "brakeBiasFront": 0.55,
+        "handbrakeTorqueNm": 2800
+      }
+    },
+    {
+      "id": "vortex_9",
+      "name": "Vortex 9",
+      "klass": "Hyper",
+      "description": "Lightweight all-wheel-drive missile with serious downforce. Enormous cornering speed, but when grip finally lets go it goes fast - and it is gone.",
+      "render": {
+        "color": "#ffd60a",
+        "accent": "#1b1b1b",
+        "glass": "#1c1a10",
+        "livery": [
+          "#ffd60a",
+          "#b39200"
+        ]
+      },
+      "body": {
+        "massKg": 1090,
+        "yawInertiaKgM2": 1620,
+        "cgToFrontM": 1.3,
+        "cgToRearM": 1.3,
+        "cgHeightM": 0.46,
+        "trackWidthM": 1.66,
+        "lengthM": 4.5,
+        "widthM": 1.96,
+        "heightM": 1.18,
+        "dragAreaCdA": 0.62,
+        "rollingResistanceCoeff": 0.012,
+        "downforceCoeff": 2.2
+      },
+      "tires": {
+        "radiusM": 0.33,
+        "gripFront": 1.4,
+        "gripRear": 1.36,
+        "corneringStiffnessPerGrip": 15.0,
+        "slideGripRatio": 0.7,
+        "longitudinalGripRatio": 1.08
+      },
+      "wheels": {
+        "inertiaFrontKgM2": 1.15,
+        "inertiaRearKgM2": 1.15
+      },
+      "engine": {
+        "idleRpm": 1100,
+        "redlineRpm": 9000,
+        "revLimiterRpm": 9200,
+        "torqueCurveNm": [
+          {
+            "rpm": 1200,
+            "nm": 380
+          },
+          {
+            "rpm": 3500,
+            "nm": 600
+          },
+          {
+            "rpm": 5500,
+            "nm": 660
+          },
+          {
+            "rpm": 7000,
+            "nm": 610
+          },
+          {
+            "rpm": 8800,
+            "nm": 500
+          }
+        ],
+        "audio": {
+          "toneHz": 78,
+          "brightness": 0.82,
+          "roughness": 0.24
+        }
+      },
+      "drivetrain": {
+        "layout": "AWD",
+        "gearRatios": [
+          2.9,
+          1.95,
+          1.5,
+          1.2,
+          0.95
+        ],
+        "reverseRatio": 2.8,
+        "finalDrive": 3.6,
+        "powerSplitFront": 0.35,
+        "balance": 0.25,
+        "launchRpm": 4600
+      },
+      "steering": {
+        "maxSteerAngleDeg": 34,
+        "steerAuthority": 1.0
+      },
+      "brakes": {
+        "maxBrakeTorqueNm": 4200,
+        "brakeBiasFront": 0.66,
+        "handbrakeTorqueNm": 3000
+      }
+    }
+  ]
+}

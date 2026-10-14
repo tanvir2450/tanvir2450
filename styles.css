@@ -1,0 +1,581 @@
+/* Apex 2D - HUD styling. The canvas is the world; everything here is chrome. */
+
+:root {
+  --bg: #0b0d10;
+  --panel: rgba(16, 19, 24, 0.82);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --text: #eef2f6;
+  --muted: #8b95a3;
+  --accent: #31d0aa;
+  --warn: #ffb703;
+  --danger: #ff4036;
+  --font: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "SFMono-Regular", "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+}
+
+#game {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  padding: clamp(8px, 1.4vw, 18px);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  align-content: start;
+  font-size: clamp(11px, 0.95vw, 14px);
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- dash ------------------------------------------------------- */
+
+.panel-dash {
+  grid-column: 1;
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  align-self: end;
+}
+
+#tach {
+  width: clamp(96px, 9vw, 132px);
+  height: clamp(96px, 9vw, 132px);
+  display: block;
+}
+
+.dash-readout {
+  min-width: 118px;
+}
+
+.gear-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+#gear {
+  font-family: var(--mono);
+  font-size: 2.5em;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+}
+
+#gear.reverse {
+  color: var(--warn);
+}
+
+.gear-label,
+.label,
+.speed-unit,
+.unit {
+  font-size: 0.72em;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.speed-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+#speed {
+  font-family: var(--mono);
+  font-size: 2em;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sub-row {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 0.82em;
+  color: var(--muted);
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.sub-row .sep {
+  opacity: 0.4;
+}
+
+/* ---------- timing ---------------------------------------------------- */
+
+.panel-timing {
+  grid-column: 3;
+  grid-row: 1;
+  display: grid;
+  gap: 4px;
+  min-width: 190px;
+  justify-self: end;
+}
+
+.panel-timing .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: baseline;
+}
+
+.panel-timing .value {
+  font-family: var(--mono);
+  font-size: 1.02em;
+}
+
+.panel-timing .accent {
+  color: var(--accent);
+}
+
+#last-lap-row.highlight .value {
+  color: var(--warn);
+}
+
+.panel-timing .small {
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+/* ---------- grip ------------------------------------------------------ */
+
+.panel-grip {
+  grid-column: 1;
+  grid-row: 1;
+  display: grid;
+  gap: 8px;
+  min-width: 220px;
+  align-self: start;
+}
+
+.grip-row {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar {
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+  position: relative;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2b8a76, var(--accent));
+  transition: width 90ms linear, background 140ms linear;
+}
+
+.bar i.high {
+  background: linear-gradient(90deg, #d19b12, var(--warn));
+}
+
+.bar i.sliding {
+  background: linear-gradient(90deg, #a3241c, var(--danger));
+  box-shadow: 0 0 12px rgba(255, 64, 54, 0.6);
+}
+
+.surface-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78em;
+  letter-spacing: 0.1em;
+}
+
+#surface {
+  color: var(--muted);
+}
+
+#surface.flash {
+  animation: flash 0.55s steps(2, end) infinite;
+}
+
+@keyframes flash {
+  to {
+    opacity: 0.35;
+  }
+}
+
+#surface[data-surface="wet"] {
+  color: #7fc4ff;
+}
+#surface[data-surface="dirt"] {
+  color: #d9b478;
+}
+#surface[data-surface="grass"] {
+  color: #86c97f;
+}
+#surface[data-surface="oil"] {
+  color: #c471ff;
+}
+
+.wheelspin-dot {
+  opacity: 0;
+  color: var(--warn);
+  transition: opacity 120ms linear;
+}
+
+/* ---------- drift ----------------------------------------------------- */
+
+.panel-drift {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: center;
+  text-align: center;
+  min-width: 150px;
+  transition: border-color 160ms linear, transform 160ms ease-out;
+}
+
+.panel-drift.drifting {
+  border-color: rgba(255, 183, 3, 0.75);
+  transform: scale(1.04);
+}
+
+.drift-head {
+  font-size: 0.68em;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+}
+
+.drift-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+}
+
+#drift-score {
+  font-family: var(--mono);
+  font-size: 1.7em;
+  font-weight: 700;
+}
+
+#drift-combo {
+  font-family: var(--mono);
+  font-size: 0.95em;
+  color: var(--muted);
+}
+
+#drift-combo.active {
+  color: var(--warn);
+}
+
+.drift-pending {
+  height: 1.1em;
+  font-family: var(--mono);
+  color: var(--warn);
+  font-size: 0.9em;
+}
+
+/* ---------- car picker ------------------------------------------------ */
+
+.panel-car {
+  grid-column: 3;
+  grid-row: 3;
+  align-self: end;
+  justify-self: end;
+  pointer-events: auto;
+  min-width: 190px;
+}
+
+.car-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+#car-name {
+  font-weight: 600;
+}
+
+#car-class {
+  font-size: 0.72em;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.car-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.car-buttons button {
+  flex: 1 1 auto;
+  min-width: 30px;
+  padding: 5px 7px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: background 120ms linear, border-color 120ms linear;
+}
+
+.car-buttons button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.car-buttons button.active {
+  border-color: var(--accent);
+  background: rgba(49, 208, 170, 0.16);
+  color: #d9fff5;
+}
+
+.car-meta {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 0.72em;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* ---------- minimap --------------------------------------------------- */
+
+#minimap {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  align-self: start;
+  width: clamp(110px, 11vw, 158px);
+  height: clamp(90px, 9vw, 130px);
+  margin-top: 84px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+}
+
+/* ---------- messages -------------------------------------------------- */
+
+#message {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: center;
+  align-self: center;
+  font-size: 1.25em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(10, 12, 16, 0.72);
+  border: 1px solid var(--panel-border);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 180ms ease-out, transform 180ms ease-out;
+}
+
+#message.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.hint {
+  grid-column: 2;
+  grid-row: 3;
+  align-self: end;
+  justify-self: center;
+  text-align: center;
+  font-size: 0.76em;
+  color: var(--muted);
+  background: rgba(10, 12, 16, 0.5);
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+
+.hint b {
+  color: var(--text);
+}
+
+/* ---------- touch controls ------------------------------------------- */
+
+.touch-controls {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: none;
+  justify-content: space-between;
+  padding: 14px;
+  pointer-events: none;
+}
+
+.touch-controls > div {
+  display: flex;
+  gap: 10px;
+}
+
+.touch-btn {
+  pointer-events: auto;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(20, 24, 30, 0.78);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  touch-action: none;
+}
+
+.touch-btn.wide {
+  width: 96px;
+  background: rgba(49, 208, 170, 0.22);
+  border-color: rgba(49, 208, 170, 0.42);
+}
+
+.touch-btn:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .touch-controls {
+    display: flex;
+  }
+  .hint {
+    display: none;
+  }
+  #minimap {
+    margin-top: 0;
+  }
+}
+
+/* ---------- loading / errors ----------------------------------------- */
+
+#loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(120% 90% at 50% 0%, #141a22 0%, #0b0d10 60%);
+  transition: opacity 380ms ease-out;
+  z-index: 20;
+}
+
+#loading.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-inner {
+  text-align: center;
+}
+
+.loading-inner h1 {
+  margin: 0;
+  font-size: clamp(28px, 5vw, 52px);
+  letter-spacing: 0.22em;
+  font-weight: 700;
+}
+
+.loading-inner p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  letter-spacing: 0.14em;
+  font-size: 0.86em;
+  text-transform: uppercase;
+}
+
+.loading-inner .small {
+  font-size: 0.74em;
+  letter-spacing: 0.08em;
+}
+
+.spinner {
+  width: 34px;
+  height: 34px;
+  margin: 22px auto 16px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.14);
+  border-top-color: var(--accent);
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#error {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(10, 12, 16, 0.94);
+  font-family: var(--mono);
+  font-size: 0.86em;
+  color: #ffb3ae;
+  white-space: pre-wrap;
+  text-align: center;
+}
+
+/* narrow screens: keep the important panels, drop the rest */
+@media (max-width: 720px) {
+  .panel-car,
+  .hint {
+    display: none;
+  }
+  #minimap {
+    width: 96px;
+    height: 78px;
+  }
+}

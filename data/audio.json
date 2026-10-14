@@ -1,0 +1,70 @@
+{
+  "$comment": "SECTION 9.2 - Engine audio is driven directly from RPM. All synthesis constants live here.",
+  "master": {
+    "volume": 0.55,
+    "muteByDefault": false
+  },
+  "engine": {
+    "waveform": "sawtooth",
+    "subWaveform": "square",
+    "idleBumpHz": 26,
+    "harmonics": [
+      {
+        "multiple": 1.0,
+        "gain": 0.55,
+        "waveform": "sawtooth"
+      },
+      {
+        "multiple": 2.0,
+        "gain": 0.26,
+        "waveform": "square"
+      },
+      {
+        "multiple": 3.02,
+        "gain": 0.12,
+        "waveform": "sawtooth"
+      },
+      {
+        "multiple": 0.5,
+        "gain": 0.2,
+        "waveform": "triangle"
+      }
+    ],
+    "lowpassIdleHz": 700,
+    "lowpassRedlineHz": 5200,
+    "gainIdlePct": 0.5,
+    "gainRedlinePct": 1.0,
+    "gainOffThrottlePct": 0.34,
+    "shiftDipPct": 0.45,
+    "shiftDipMs": 180,
+    "shiftDipPitchPct": 0.12,
+    "limiterGateHz": 26,
+    "limiterCutGainPct": 0.35,
+    "fadeInMs": 220,
+    "fadeOutMs": 400
+  },
+  "tires": {
+    "screechBandHz": [
+      780,
+      2600
+    ],
+    "screechQ": 3.4,
+    "volumeAtFullSlip": 0.24,
+    "pitchJitterPct": 0.08,
+    "screechUsageThreshold": 0.85
+  },
+  "surface": {
+    "dustBandHz": [
+      220,
+      1800
+    ],
+    "volumeAtFullSlip": 0.3,
+    "windVolume": 0.1,
+    "windBandHz": [
+      180,
+      900
+    ],
+    "windStartSpeedMs": 12,
+    "windFullSpeedMs": 70
+  }
+}

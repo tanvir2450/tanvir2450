@@ -1,0 +1,52 @@
+{
+  "$comment": "SECTION 9.3 - Surface grip / drag table. grip = multiplier on axle grip limit, drag = multiplier on rolling + aero resistance. These are the values from the spec; edit here, never in code.",
+  "defaultSurface": "asphalt",
+  "baseSurface": "grass",
+  "surfaces": {
+    "asphalt": {
+      "id": "asphalt",
+      "name": "Asphalt (dry)",
+      "grip": 1.0,
+      "drag": 1.0,
+      "skidIntensity": 0.0,
+      "particle": null,
+      "render": { "fill": "#3a3e45", "edge": "#2a2d33", "lane": "#c9ccd2" }
+    },
+    "wet": {
+      "id": "wet",
+      "name": "Wet road",
+      "grip": 0.7,
+      "drag": 1.0,
+      "skidIntensity": 0.12,
+      "particle": "spray",
+      "render": { "fill": "#333d4a", "edge": "#252d36", "lane": "#8f9aa6" }
+    },
+    "dirt": {
+      "id": "dirt",
+      "name": "Dirt/Sand",
+      "grip": 0.55,
+      "drag": 1.6,
+      "skidIntensity": 1.0,
+      "particle": "dust",
+      "render": { "fill": "#7d6a4b", "edge": "#655439", "lane": null }
+    },
+    "grass": {
+      "id": "grass",
+      "name": "Grass",
+      "grip": 0.45,
+      "drag": 2.0,
+      "skidIntensity": 0.65,
+      "particle": "dust",
+      "render": { "fill": "#3a6136", "edge": "#2f502c", "lane": null }
+    },
+    "oil": {
+      "id": "oil",
+      "name": "Oil slick",
+      "grip": 0.2,
+      "drag": 1.0,
+      "skidIntensity": 0.08,
+      "particle": null,
+      "render": { "fill": "#23212a", "edge": "#191821", "lane": null }
+    }
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "$comment": "SECTION 9 - global tuning constants. Every number the car simulator uses lives here (or per car in cars.json). No physics value is hardcoded in src/ - src/config.js fails loudly if a required constant is missing.",
+  "simulation": {
+    "physicsHz": 60,
+    "maxSubSteps": 8,
+    "maxSubStepTravelM": 0.35,
+    "maxSubStepSeconds": 0.0042,
+    "maxFrameTimeMs": 250,
+    "pxPerMeter": 32,
+    "gravity": 9.81,
+    "airDensity": 1.225,
+    "maxSpeedMs": 140,
+    "restVelocityEpsilon": 0.03,
+    "maxYawRateRadS": 8.0
+  },
+  "drivetrain": {
+    "gearCount": 5,
+    "shiftUpAtRedlinePct": 0.9,
+    "shiftDownAtRedlinePct": 0.44,
+    "shiftTorqueCutMs": 120,
+    "shiftTotalMs": 260,
+    "shiftCooldownMs": 140,
+    "rpmResponsePerSecond": 9.0,
+    "clutchLockRpmPct": 0.12,
+    "clutchLockIdlePct": 0.55,
+    "clutchLockRatePerSecond": 16.0,
+    "kickdownSpeedMs": 0.6,
+    "shiftBlipMs": 90,
+    "limiterBouncePct": 0.012,
+    "finalDriveEfficiency": 0.92,
+    "engineBrakeTorqueNm": 26,
+    "engineBrakePerRpm": 0.0035,
+    "engineBrakeWheelCutoffMs": 0.45,
+    "idleGovernorTorqueNm": 110,
+    "idleGovernorKp": 0.055,
+    "revLimiterRpmMargin": 120,
+    "revLimiterCutMs": 95,
+    "revLimiterRecoverMs": 60,
+    "wheelspinRpmBoostPct": 0.22,
+    "reverseEngageSpeedMs": 1.6,
+    "reverseEngageDwellMs": 260,
+    "reverseTopSpeedMs": 14,
+    "launchTorqueScale": 0.9,
+    "throttleBlipDownshift": 0.35
+  },
+  "tires": {
+    "model": "velocityScaled",
+    "velocityDampingPerSecond": 7.0,
+    "slipSpeedFloorMs": 2.0,
+    "slideGripRatio": 0.7,
+    "slideEnterUsage": 1.0,
+    "slideExitUsage": 0.82,
+    "slideGripRecoveryPerSecond": 2.6,
+    "slideGripDropPerSecond": 24.0,
+    "slidePressureSpan": 1.3,
+    "longitudinalGripRatio": 1.05,
+    "wheelspinTractionLoss": 0.1,
+    "frictionEllipse": 0.92,
+    "frictionEllipseFloor": 0.35,
+    "gripSmoothing": 30.0,
+    "axleBrakeBiasCutoff": 0.0,
+    "wheelspinGripLoss": 0.55
+  },
+  "chassis": {
+    "loadTransferFactor": 0.55,
+    "loadTransferSmoothing": 0.18,
+    "maxTransferFraction": 0.85,
+    "minAxleLoadN": 900,
+    "referenceLoadN": 6000,
+    "bodyRollVisualDeg": 3.4,
+    "bodyPitchVisualDeg": 1.6,
+    "bodyMotionSmoothing": 9.0,
+    "wheelVisualTravelM": 0.06
+  },
+  "aero": {
+    "dragScale": 1.0,
+    "rollingResistanceScale": 1.0,
+    "downforceScale": 1.0
+  },
+  "steering": {
+    "highSpeedSteerAnglePct": 0.3,
+    "steerFalloffSpeedMs": 45,
+    "steerRateDegPerSec": 240,
+    "returnRateDegPerSec": 560,
+    "handbrakeSteerBoostDeg": 4,
+    "maxVisualSteerDeg": 28
+  },
+  "brakes": {
+    "absEnabled": true,
+    "absUsageTarget": 0.96,
+    "handbrakeRearGripScale": 0.3,
+    "handbrakeRearBrakeScale": 0.55
+  },
+  "balance": {
+    "gripInfluence": 0.18,
+    "comment": "axleGripMul = 1 - gripInfluence*balance (front) / 1 + gripInfluence*balance (rear). balance > 0 => rear loses grip first => oversteer."
+  },
+  "assists": {
+    "counterSteerAssistPct": 0.1,
+    "stabilityAssistEnabled": true,
+    "stabilityAssistStrength": 0.28,
+    "stabilityAssistActivationDeg": 78,
+    "stabilityAssistMaxYawRateRadS": 2.4,
+    "stabilityAssistMaxSpeedMs": 70
+  },
+  "world": {
+    "gridCellM": 8.0,
+    "gateSpacingM": 30.0,
+    "minGateWidthM": 4.0,
+    "gateResyncWindow": 4
+  },
+  "collision": {
+    "wallRestitution": 0.28,
+    "skinM": 0.02,
+    "hardImpactSpeedMs": 4.5,
+    "wallFriction": 0.55,
+    "wallScrapeSpeedLoss": 0.16,
+    "impactSpeedLossPct": 0.45,
+    "impactYawImpulse": 0.5,
+    "maxImpactSpeedMs": 12,
+    "impactShakeScale": 0.6
+  },
+  "skid": {
+    "markMinSpeedMs": 1.5,
+    "markUsageThreshold": 0.95,
+    "markWidthM": 0.24,
+    "markAlpha": 0.5,
+    "markFadeSeconds": 26,
+    "maxMarkSegments": 1400,
+    "smokeUsageThreshold": 1.0,
+    "dustUsageThreshold": 0.85,
+    "maxParticles": 420,
+    "wheelspinSpinBoostRadS": 22,
+    "wheelspinSpinRatePerSecond": 24
+  },
+  "drift": {
+    "minSpeedMs": 6,
+    "minSlipAngleDeg": 9,
+    "scorePerSecondAtFullSlide": 130,
+    "comboWindowSeconds": 2.6,
+    "comboStep": 0.25,
+    "comboMax": 6,
+    "bankOnCleanSeconds": 1.2,
+    "spinOutYawRateRadS": 2.6
+  },
+  "camera": {
+    "followLerpPerSecond": 7,
+    "speedZoomPct": 0.22,
+    "baseZoom": 0.85,
+    "minZoom": 0.5,
+    "maxZoom": 1.05,
+    "leadDistanceM": 0.28,
+    "shakeDecayPerSecond": 6
+  },
+  "audio": {
+    "screechUsageThreshold": 0.85,
+    "windStartSpeedMs": 12,
+    "windFullSpeedMs": 55
+  },
+  "debug": {
+    "showForcesByDefault": false,
+    "drawTelemetry": false,
+    "surfaceProbeRadiusM": 1.1
+  }
+}
