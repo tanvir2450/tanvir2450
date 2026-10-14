@@ -136,8 +136,6 @@ const TUNING_NUMBERS = [
   'aero.dragScale',
   'aero.rollingResistanceScale',
   'aero.downforceScale',
-  'steering.highSpeedSteerAnglePct',
-  'steering.steerFalloffSpeedMs',
   'steering.steerRateDegPerSec',
   'steering.returnRateDegPerSec',
   'steering.handbrakeSteerBoostDeg',
@@ -193,15 +191,135 @@ const TUNING_NUMBERS = [
   'audio.screechUsageThreshold',
   'audio.windStartSpeedMs',
   'audio.windFullSpeedMs',
-  'debug.surfaceProbeRadiusM'
+  'debug.surfaceProbeRadiusM',
+  // 9.4 steering
+  'steering.steerRateDegPerSec',
+  'steering.returnRateDegPerSec',
+  'steering.keyboardRampMs',
+  'steering.assistSteerPct',
+  'steering.assistMaxSteerPct',
+  'steering.assistSpeedMs',
+  'steering.assistHoldSeconds',
+  'steering.assistDriftReleasePerSecond',
+  // 9.5 brakes
+  'brakes.handbrakeLockGripScale',
+  'brakes.handbrakeLockSeconds',
+  'brakes.handbrakeCooldownSeconds',
+  'brakes.handbrakeLockBrakeScale',
+  'brakes.brakeLightOnThreshold',
+  // 9.6 drift
+  'drift.crashCancelWindowSeconds',
+  'drift.cleanExitBoostPct',
+  'drift.cleanExitMinPoints',
+  'drift.cleanExitBoostSeconds',
+  'drift.nitroPerPoint',
+  'drift.coinsPerPoint',
+  'drift.stylePerPoint',
+  // 9.7 nitro
+  'nitro.drainPerSecond',
+  'nitro.minToActivatePct',
+  'nitro.forceMultiplier',
+  'nitro.topSpeedMultiplier',
+  'nitro.steerAnglePct',
+  'nitro.fillFromDriftPerPoint',
+  'nitro.fillFromNearMissPct',
+  'nitro.fillFromSlipstreamPerSecond',
+  'nitro.fillFromSlipstreamMaxPct',
+  'nitro.overheatLockoutMs',
+  'nitro.cameraZoomOutPct',
+  'nitro.flameParticlesPerSecond',
+  'nitro.speedLinesPerSecond',
+  'nitro.audioLayerGain',
+  // 9.8 collisions
+  'collision.carRestitution',
+  'collision.carFriction',
+  'collision.carImpulseMaxSpeedMs',
+  'collision.hitStopMs',
+  'collision.hitStopMinImpactMs',
+  'collision.hitStopMaxMs',
+  'collision.hitStopImpactMs',
+  'collision.scrapeSparkSpeedMs',
+  'collision.sparksPerSecond',
+  'collision.hitStopShakeScale',
+  // 9.9 damage
+  'damage.armorScale',
+  'damage.minImpactSpeedMs',
+  'damage.minImpactEnergyJ',
+  'damage.healthMax',
+  'damage.smokeAtHealthPct',
+  'damage.fireAtHealthPct',
+  'damage.frontEffectAtZonePct',
+  'damage.sideEffectAtZonePct',
+  'damage.rearEffectAtZonePct',
+  'damage.topSpeedLossPctPerDamage',
+  'damage.topSpeedLossMaxPct',
+  'damage.steerPullMaxDeg',
+  'damage.accelLossPctPerDamage',
+  'damage.accelLossMaxPct',
+  'damage.scrapeDamagePerSecond',
+  'damage.wreckSeconds',
+  // 9.10 traffic + economy
+  'traffic.count',
+  'traffic.spawnAheadM',
+  'traffic.spawnSpreadM',
+  'traffic.slipstreamRangeM',
+  'traffic.slipstreamHalfAngleDeg',
+  'traffic.slipstreamSpeedPct',
+  'traffic.slipstreamMinSpeedMs',
+  'traffic.nearMissDistanceM',
+  'traffic.nearMissMinSpeedMs',
+  'traffic.nearMissCooldownSeconds',
+  'traffic.respawnSeconds',
+  'traffic.contactDamageScale',
+  'economy.coinsPerLap',
+  'economy.coinsPerNearMiss',
+  'economy.coinsPerStylePoint',
+  'economy.coinsPerStar',
+  'economy.repairCostPerDamage',
+  'economy.repairCostMin',
+  'economy.freeQuickRepairs',
+  'economy.quickRepairHealthPct',
+  'economy.startCoins',
+  // 9.6 / 9.10 shapes and recovery, authored rather than coded
+  'drift.fullSlideAngleSpanDeg',
+  'drift.fullScoreSpeedMs',
+  'drift.minSpeedFactor',
+  'drift.minBankSeconds',
+  'drift.cancelMinPoints',
+  'drift.spinMinSpeedMs',
+  'drift.comboRampSeconds',
+  'traffic.stuckSpeedMs',
+  'traffic.respawnAheadM',
+  'traffic.respawnSpeedMs',
+  'traffic.respawnLockoutSeconds',
+  'traffic.decorCooldownScale',
+  'steering.assistFullErrorDeg',
+  'steering.assistReleasePerSecond',
+  'steering.assistMinInput',
+  'steering.steerOvershootScale',
+  // 9.4 analog steering sources
+  'input.padDeadZonePx',
+  'input.padFullLockPx',
+  'input.padResponseExponent',
+  'input.padReleasePerSecond',
+  'input.tiltDeadZoneDeg',
+  'input.tiltFullLockDeg',
+  'input.tiltSmoothPerSecond'
 ];
 
 const TUNING_FLAGS = [
   'brakes.absEnabled',
+  'input.tiltEnabled',
+  'input.tiltInvert',
   'assists.stabilityAssistEnabled',
   'debug.showForcesByDefault',
-  'debug.drawTelemetry'
+  'debug.drawTelemetry',
+  'damage.enabled',
+  'traffic.enabled'
 ];
+
+const TUNING_ARRAYS = ['steering.speedSteerCurve', 'assists.difficulty.levels'];
+const TUNING_KEYED_NUMBERS = ['damage.zoneBias'];
 
 const CAR_NUMBERS = [
   'body.massKg',
@@ -239,7 +357,11 @@ const CAR_NUMBERS = [
   'steering.steerAuthority',
   'brakes.maxBrakeTorqueNm',
   'brakes.brakeBiasFront',
-  'brakes.handbrakeTorqueNm'
+  'brakes.handbrakeTorqueNm',
+  // 9.7 / 9.9 car stats
+  'nitro.capacity',
+  'nitro.power',
+  'armor'
 ];
 
 const SURFACE_NUMBERS = ['grip', 'drag', 'skidIntensity'];
@@ -294,6 +416,34 @@ export function createConfig(raw, options = {}) {
     if (typeof getPath(tuning, path) !== 'boolean') problems.push(`tuning.json: ${path} must be true or false`);
   }
   if (typeof tuning.tires.model !== 'string') problems.push('tuning.json: tires.model must be a string');
+  for (const path of TUNING_ARRAYS) {
+    if (!Array.isArray(getPath(tuning, path))) problems.push(`tuning.json: ${path} must be an array`);
+  }
+  for (const path of TUNING_KEYED_NUMBERS) {
+    const value = getPath(tuning, path);
+    if (!value || typeof value !== 'object') {
+      problems.push(`tuning.json: ${path} must be an object of numbers`);
+    } else {
+      for (const [key, number] of Object.entries(value)) {
+        if (!isNum(number)) problems.push(`tuning.json: ${path}.${key} must be a number`);
+      }
+    }
+  }
+  // 9.4: the speed-sensitive steering curve must be authorable in any order.
+  const steerCurve = tuning.steering.speedSteerCurve;
+  if (Array.isArray(steerCurve)) {
+    if (steerCurve.length < 2) {
+      problems.push('tuning.json: steering.speedSteerCurve needs at least two points');
+    }
+    for (const [i, point] of steerCurve.entries()) {
+      if (!isNum(point?.speedKph) || !isNum(point?.pct)) {
+        problems.push(`tuning.json: steering.speedSteerCurve[${i}] needs {speedKph, pct}`);
+      }
+    }
+    if (!problems.length) {
+      tuning.steering.speedSteerCurve = [...steerCurve].sort((a, b) => a.speedKph - b.speedKph);
+    }
+  }
 
   /* ---- surfaces ------------------------------------------------- */
   const surfaces = new Map();
@@ -352,6 +502,15 @@ export function createConfig(raw, options = {}) {
       longitudinalGripRatio: car.tires.longitudinalGripRatio ?? tuning.tires.longitudinalGripRatio
     };
 
+    // 9.7 nitro tank + 9.9 damage resistance, both authored per car in real
+    // units (capacity in "tank percent" seconds of boost, armor as a divisor).
+    const nitro = {
+      ...car.nitro,
+      capacity: Math.max(1, car.nitro?.capacity ?? 100),
+      power: Math.max(0.1, car.nitro?.power ?? 1)
+    };
+    const armor = Math.max(0.05, car.armor ?? 1);
+
     const ratioTotals = car.drivetrain.gearRatios.map((r) => r * car.drivetrain.finalDrive);
     const reverseRatioTotal = car.drivetrain.reverseRatio * car.drivetrain.finalDrive;
     const toWheelForce = (total) =>
@@ -371,6 +530,8 @@ export function createConfig(raw, options = {}) {
           massRearKg: body.massKg * massRearShare
         }),
         engine: Object.freeze({ ...car.engine, torqueCurve: curve, maxTorqueNm: Math.max(...curve.map((p) => p.nm)) }),
+        nitro: Object.freeze(nitro),
+        armor,
         drivetrain: Object.freeze({
           ...car.drivetrain,
           ratioTotals,
@@ -409,6 +570,42 @@ export function createConfig(raw, options = {}) {
     }
   }
 
+  // 9.4: how much of a car's steering lock is available at a speed, as a
+  // fraction. Interpolated from `steering.speedSteerCurve` here, at load time,
+  // so no code has to know the shape of the curve.
+  const lockCurve = Array.isArray(tuning.steering?.speedSteerCurve) ? tuning.steering.speedSteerCurve : [];
+  const steerLockPct = (speedMs) => {
+    if (!lockCurve.length) return 1;
+    const kph = speedMs * 3.6;
+    if (kph <= lockCurve[0].speedKph) return lockCurve[0].pct;
+    for (let i = 1; i < lockCurve.length; i++) {
+      if (kph <= lockCurve[i].speedKph) {
+        const a = lockCurve[i - 1];
+        const b = lockCurve[i];
+        const t = (kph - a.speedKph) / Math.max(1e-6, b.speedKph - a.speedKph);
+        return a.pct + (b.pct - a.pct) * t;
+      }
+    }
+    return lockCurve[lockCurve.length - 1].pct;
+  };
+
+  // 9.4: difficulty is a list of levels in tuning.json; each level scales how
+  // much mobile steering help the player gets. `master` is 0 - no help at all.
+  const difficultyLevels = (tuning.assists?.difficulty?.levels ?? [])
+    .map((level, index) => {
+      const id = level.id ?? `level${index + 1}`;
+      return Object.freeze({
+        id,
+        label: level.label ?? id,
+        assistPct: Math.max(0, Math.min(1, level.assistPct ?? 1))
+      });
+    });
+  if (!difficultyLevels.length) {
+    difficultyLevels.push(Object.freeze({ id: 'normal', label: 'Normal', assistPct: 1 }));
+  }
+  const difficultyFor = (id) => difficultyLevels.find((level) => level.id === id) ?? difficultyLevels[0];
+  const defaultDifficulty = difficultyFor(tuning.assists?.difficulty?.default);
+
   const units = Object.freeze({
     pxPerMeter: tuning.simulation.pxPerMeter,
     /** metres -> world pixels (used by renderer + track builder only). */
@@ -433,6 +630,12 @@ export function createConfig(raw, options = {}) {
     baseSurfaceId,
     cars: Object.freeze(cars),
     carById,
+    /** 9.4 steering-assist difficulty, authored in tuning.assists.difficulty. */
+    difficultyLevels: Object.freeze(difficultyLevels),
+    defaultDifficulty,
+    difficultyFor,
+    /** 9.4 speed-sensitive steering: lock available at a speed, 0..1. */
+    steerLockPct,
     units,
     warnings: Object.freeze(warnings)
   });

@@ -39,6 +39,9 @@ import {
   updateSlideState
 } from './tires.js';
 import { Drivetrain } from './engine.js';
+import { Steering } from './steering.js';
+import { DamageModel } from './damage.js';
+import { Nitro } from './nitro.js';
 
 const WHEELS_PER_AXLE = 2;
 
@@ -83,6 +86,13 @@ export class Car {
     });
     this.axles = [this.frontAxle, this.rearAxle];
     this.engine = new Drivetrain(definition, this.tuning);
+    // 9.4 steering input shaping + 9.9 damage + 9.7 nitro: one of each per car,
+    // so rivals get exactly the same machinery as the player.
+    this.steering = new Steering(config);
+    this.damage = new DamageModel(config, definition);
+    this.nitro = new Nitro(config, definition);
+    this.brakeLight = 0;
+    this.impactFreeze = 0;
 
     this.wheels = [
       { id: 'FL', axle: 'front', side: -1, lateralM: -definition.body.trackWidthM / 2, steer: 1, drive: definition.drivetrain.powerSplitFront > 0 },
@@ -134,6 +144,18 @@ export class Car {
     this.lastImpactSpeedMs = 0;
     this.impactEvents = [];
     this.engine.reset();
+    this.steering.reset();
+    this.damage = new DamageModel(this.config, this.def);
+    this.nitro.reset();
+    this.steerRamp = 0;
+    this.brakeLight = 0;
+    this.impactFreeze = 0;
+    this.handbrakeLockTimer = 0;
+    this.handbrakeCooldown = 0;
+    this.slipstreamStrength = 0;
+    this.driftBoost = 1;
+    this.hitStop = 0;
+    this.brakeRequest = 0;
     for (const axle of this.axles) {
       axle.loadN = axle.massKg * this.tuning.simulation.gravity;
       axle.gripScale = 1;
@@ -192,23 +214,57 @@ export class Car {
     return { x: this.x + c * d, y: this.y + s * d };
   }
 
-  /** Physics tick at exactly one fixed step. */
+  /**
+   * Physics tick at exactly one fixed step.
+   *
+   * `input` is what a player (or the autopilot) is asking for, plus anything the
+   * game layer adds on top: nitro (9.7), a slipstream (9.10) and the drift boost
+   * (9.6) are all delivered as multipliers here so the car itself stays the only
+   * place forces are applied.
+   */
   step(dt, input, world) {
     const sim = this.tuning.simulation;
     this.impactEvents.length = 0;
     this.timeSinceReset += dt;
 
-    /* ---- steering input shaping -------------------------------- */
-    const steerTarget = clamp(input.steer ?? 0, -1, 1);
-    const degreesPerInput = this.def.steering.maxSteerAngleDeg;
-    const towardLock = Math.abs(steerTarget) > Math.abs(this.steerInput) && Math.sign(steerTarget) === Math.sign(this.steerInput || steerTarget);
-    const inputRate = (towardLock ? this.tuning.steering.steerRateDegPerSec : this.tuning.steering.returnRateDegPerSec) / Math.max(1, degreesPerInput);
-    this.steerInput = rateApproach(this.steerInput, steerTarget, inputRate, dt);
+    /* ---- 9.8 hit-stop ------------------------------------------ */
+    // A big impact freezes the simulation for up to hitStopMaxMs: the car keeps
+    // its velocity, the clock keeps running, but nothing integrates. That gap is
+    // what makes a crash land with weight instead of just slowing you down.
+    if (this.hitStop > 0) {
+      this.hitStop = Math.max(0, this.hitStop - dt * 1000);
+      this.impactFreeze = this.hitStop;
+      return;
+    }
+
+    /* ---- 9.7 nitro tank ---------------------------------------- */
+    const nitroState = this.nitro.update(dt, input);
+    this.nitroState = nitroState;
+    this.slipstreamStrength = clamp(input.slipstream ?? 0, 0, 1);
+    this.driftBoost = Math.max(1, input.driftBoost ?? 1);
+
+    /* ---- 9.4 steering input shaping ---------------------------- */
+    this.steering.update(dt, this, input);
+
+    /* ---- 9.5 brake lights -------------------------------------- */
+    const brakeRequest = clamp(input.brake ?? 0, 0, 1);
+    this.brakeRequest = Math.max(brakeRequest, input.handbrake ? 1 : 0);
+    const lightTuning = this.tuning.brakes;
+    if (this.brakeRequest > lightTuning.brakeLightOnThreshold) this.brakeLight = 1;
+    else this.brakeLight = Math.max(0, this.brakeLight - dt * 6);
 
     /* ---- engine / gearbox once per frame ----------------------- */
     const engineTelemetry = this.engine.update(
       dt,
-      { throttle: input.throttle ?? 0, brake: input.brake ?? 0, handbrake: input.handbrake ? 1 : 0 },
+      {
+        throttle: input.throttle ?? 0,
+        brake: input.brake ?? 0,
+        handbrake: input.handbrake ? 1 : 0,
+        // 9.7 (+40 % force) and 9.6 (clean-exit boost) act on the crank, and
+        // 9.9's rear damage takes a cut - all in one place.
+        powerScale: nitroState.forceMultiplier * this.driftBoost * this.damage.accelScale,
+        speedCapScale: nitroState.topSpeedMultiplier * this.damage.topSpeedScale
+      },
       { speedMs: this.speedMs, forwardSpeedMs: this.forwardSpeedMs, wheelSpin: this.wheelSpin, grounded: true }
     );
     this.engineState = engineTelemetry;
@@ -245,6 +301,9 @@ export class Car {
     const pitchTarget = clamp(this.longitudinalAccelMs2, -16, 16) * this.tuning.chassis.bodyPitchVisualDeg * DEG / 8;
     this.bodyRollRad = expApproach(this.bodyRollRad, rollTarget, this.tuning.chassis.bodyMotionSmoothing, dt);
     this.bodyPitchRad = expApproach(this.bodyPitchRad, pitchTarget, this.tuning.chassis.bodyMotionSmoothing, dt);
+
+    this.damage.update(dt);
+    this.damage.recompute(this);
 
     // Safety net: a game must never show a NaN car. If anything upstream ever
     // produced a non-finite state, park the car instead of propagating it.
@@ -295,27 +354,43 @@ export class Car {
     this.frontAxle.downforceN = dfN * (body.massFrontKg / body.massKg);
     this.rearAxle.downforceN = dfN * (body.massRearKg / body.massKg);
 
-    /* ---- steering angle ---------------------------------------- */
-    const authority = 1 - (1 - tuning.steering.highSpeedSteerAnglePct) * smoothstep(0, tuning.steering.steerFalloffSpeedMs, this.speedMs);
-    const hbBoost = input.handbrake ? tuning.steering.handbrakeSteerBoostDeg * DEG : 0;
-    const counterSteer = this.assistsEnabled ? tuning.assists.counterSteerAssistPct * Math.atan2(vLateral, Math.max(Math.abs(vForward), 1)) : 0;
-    this.steerAngleRad = clamp(
-      this.steerInput * this.def.steering.maxSteerAngleRad * this.def.steering.steerAuthority * authority + counterSteer + hbBoost,
-      -this.def.steering.maxSteerAngleRad * 1.15,
-      this.def.steering.maxSteerAngleRad * 1.15
-    );
+    /* ---- 9.5 handbrake: the timed rear-grip lock ----------------- */
+    // Pressing the handbrake locks the rear tyres to
+    // brakes.handbrakeLockGripScale (35 %) for handbrakeLockSeconds (0.4 s)
+    // and then lets them come back, with a cooldown so it cannot be spammed.
+    if (input.handbrake && this.handbrakeCooldown <= 0) {
+      this.handbrakeLockTimer = (tuning.brakes.handbrakeLockSeconds ?? 0);
+      this.handbrakeCooldown = (tuning.brakes.handbrakeCooldownSeconds ?? 0) + this.handbrakeLockTimer;
+    }
+    this.handbrakeLockTimer = Math.max(0, this.handbrakeLockTimer - h);
+    this.handbrakeCooldown = Math.max(0, this.handbrakeCooldown - h);
+    const handbrakeLocked = this.handbrakeLockTimer > 0;
 
     /* ---- driver forces ----------------------------------------- */
-    const handbrakeGrip = input.handbrake ? tuning.brakes.handbrakeRearGripScale : 1;
+    // 9.5: the handbrake is a timed LOCK of the rear grip, not a permanent one:
+    // during the lock the rear tyres hold 35 % of their grip (a sharp drift
+    // entry), and then they recover - the car keeps sliding because the tires
+    // are already past the limit, which is exactly the arcade "flick" behaviour.
+    const baseHandbrakeGrip = input.handbrake ? tuning.brakes.handbrakeRearGripScale : 1;
+    const handbrakeGrip = handbrakeLocked
+      ? Math.min(baseHandbrakeGrip, tuning.brakes.handbrakeLockGripScale)
+      : baseHandbrakeGrip;
     const brakeFrontN = (this.def.axleBrakeTorque.front * (input.brake ?? 0)) / this.def.tires.radiusM;
     const brakeRearN = (this.def.axleBrakeTorque.rear * (input.brake ?? 0)) / this.def.tires.radiusM;
-    const handbrakeN = ((input.handbrake ? this.def.brakes.handbrakeTorqueNm * tuning.brakes.handbrakeRearBrakeScale : 0)) / this.def.tires.radiusM;
+    const handbrakeBrakeScale = handbrakeLocked
+      ? Math.max(tuning.brakes.handbrakeRearBrakeScale, tuning.brakes.handbrakeLockBrakeScale)
+      : tuning.brakes.handbrakeRearBrakeScale;
+    const handbrakeN = ((input.handbrake ? this.def.brakes.handbrakeTorqueNm * handbrakeBrakeScale : 0)) / this.def.tires.radiusM;
     const driveN = engineTelemetry.driveForceN;
     const engineBrakeN = engineTelemetry.engineBrakeForceN;
     const dt = this.def.drivetrain;
 
-    const frontDrive = driveN * this.frontAxle.driveShare;
-    const rearDrive = driveN * this.rearAxle.driveShare;
+    // 9.10 slipstream: following in another car's tow adds a fraction of the
+    // car's own drive force (tuning.traffic.slipstreamSpeedPct) - it is applied
+    // to the driven axle, so it does nothing if the car is off the throttle.
+    const slipstreamGain = 1 + this.tuning.traffic.slipstreamSpeedPct * this.slipstreamStrength;
+    const frontDrive = driveN * this.frontAxle.driveShare * slipstreamGain;
+    const rearDrive = driveN * this.rearAxle.driveShare * slipstreamGain;
     const frontEngineBrake = engineBrakeN * this.frontAxle.driveShare;
     const rearEngineBrake = engineBrakeN * this.rearAxle.driveShare;
 
@@ -512,7 +587,37 @@ export class Car {
       front: { ...this.frontAxle, surface: this.frontAxle.surface?.id ?? null },
       rear: { ...this.rearAxle, surface: this.rearAxle.surface?.id ?? null },
       wheels: this.wheels.map((w) => ({ ...w })),
-      odometerM: this.odometerM
+      odometerM: this.odometerM,
+      // 9.5 / 9.7 / 9.9 state the HUD and the renderer need.
+      brakeLight: this.brakeLight,
+      handbrakeLocked: this.handbrakeLockTimer > 0,
+      hitStopMs: this.hitStop,
+      nitro: {
+        pct: this.nitro.pct,
+        active: this.nitro.active,
+        overheated: this.nitro.overheated,
+        lockoutPct: this.nitro.lockout / Math.max(1, this.tuning.nitro.overheatLockoutMs),
+        capacity: this.nitro.capacity,
+        power: this.nitro.power
+      },
+      damage: {
+        healthPct: this.damage.healthPct,
+        health: this.damage.health,
+        maxHealth: this.damage.maxHealth,
+        zones: { ...this.damage.zones },
+        zonePct: {
+          front: this.damage.zonePct('front'),
+          rear: this.damage.zonePct('rear'),
+          left: this.damage.zonePct('left'),
+          right: this.damage.zonePct('right')
+        },
+        smoke: this.damage.smoke,
+        fire: this.damage.fire,
+        wrecked: this.damage.wrecked,
+        topSpeedScale: this.damage.topSpeedScale,
+        accelScale: this.damage.accelScale,
+        steerPullDeg: (this.damage.steerPullRad * 180) / Math.PI
+      }
     };
   }
 }

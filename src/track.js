@@ -255,6 +255,11 @@ export class LapTimer {
   }
 }
 
+/** Direction of travel of the track at the nearest centre-line segment (rad). */
+export function headingAt(track, x, y) {
+  return segmentAnglesAhead(track, x, y) ?? 0;
+}
+
 /** Direction of the track at the nearest centre-line segment. */
 function segmentAnglesAhead(track, x, y) {
   const centre = track.centreline;

@@ -75,6 +75,11 @@ export class Effects {
       }
     }
 
+    // 9.9 / 9.7: damage smoke and fire, and the nitro flame trail, are driven by
+    // the car's own state rather than by wheel slip.
+    this.spawnDamageFx(car, dt);
+    if (car.nitroState?.active) this.spawnNitroFlame(car, 1, dt);
+
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.life -= dt / p.maxLife;
@@ -87,6 +92,130 @@ export class Effects {
       p.vx *= 1 - 1.6 * dt;
       p.vy *= 1 - 1.6 * dt;
       p.radiusM += p.growth * dt;
+    }
+  }
+
+  /**
+   * A generic particle. The renderer switches on `kind`, so adding a new effect
+   * is a colour + a life, not a new system.
+   */
+  pushParticle(x, y, vx, vy, { radiusM = 0.25, growth = 0.9, maxLife = 0.6, alpha = 0.4, kind = 'smoke', color = null } = {}) {
+    if (this.particles.length >= this.tuning.skid.maxParticles) return null;
+    const p = { x, y, vx, vy, radiusM, growth, life: 1, maxLife, alpha, kind, color };
+    this.particles.push(p);
+    return p;
+  }
+
+  /** 9.8: sparks off a wall scrape, at the contact point. */
+  spawnSparks(event, strength = 0.5) {
+    const count = Math.round(2 + 6 * strength);
+    for (let i = 0; i < count; i++) {
+      const a = this.rng() * Math.PI * 2;
+      const speed = 3 + this.rng() * 7 * (0.4 + strength);
+      this.pushParticle(event.x, event.y, Math.cos(a) * speed - (event.normalX ?? 0) * 2, Math.sin(a) * speed - (event.normalY ?? 0) * 2, {
+        radiusM: 0.05,
+        growth: -0.05,
+        maxLife: 0.18 + this.rng() * 0.22,
+        alpha: 0.85,
+        kind: 'spark'
+      });
+    }
+  }
+
+  /** 9.8: the dust/debris puff of a real hit. */
+  spawnImpact(event, strength = 0.5) {
+    const count = Math.round(4 + 10 * strength);
+    for (let i = 0; i < count; i++) {
+      const a = this.rng() * Math.PI * 2;
+      const speed = 1 + this.rng() * 4 * (0.4 + strength);
+      this.pushParticle(event.x, event.y, Math.cos(a) * speed, Math.sin(a) * speed, {
+        radiusM: 0.18 + this.rng() * 0.25,
+        growth: 1.4,
+        maxLife: 0.5 + this.rng() * 0.7,
+        alpha: 0.3 + 0.3 * strength,
+        kind: 'debris'
+      });
+    }
+  }
+
+  /** 9.9: the wreck explosion. */
+  spawnWreck(car) {
+    for (let i = 0; i < 34; i++) {
+      const a = this.rng() * Math.PI * 2;
+      const speed = 1.5 + this.rng() * 7;
+      this.pushParticle(car.x, car.y, Math.cos(a) * speed, Math.sin(a) * speed, {
+        radiusM: 0.3 + this.rng() * 0.5,
+        growth: 2.2,
+        maxLife: 0.7 + this.rng() * 1.1,
+        alpha: 0.55,
+        kind: i % 3 === 0 ? 'fire' : 'debris'
+      });
+    }
+  }
+
+  /** 9.10: a "Close Call!" puff of air where the near miss happened. */
+  spawnNearMiss(nearMiss, car) {
+    for (let i = 0; i < 8; i++) {
+      const a = this.rng() * Math.PI * 2;
+      this.pushParticle(nearMiss.x, nearMiss.y, Math.cos(a) * 3, Math.sin(a) * 3, {
+        radiusM: 0.2,
+        growth: 2.6,
+        maxLife: 0.35,
+        alpha: 0.25,
+        kind: 'air'
+      });
+    }
+    void car;
+  }
+
+  /** 9.7: nitro flames out of the exhaust. */
+  spawnNitroFlame(car, strength, dt) {
+    const perSecond = this.tuning.nitro.flameParticlesPerSecond * strength;
+    const count = Math.round(perSecond * dt);
+    const c = Math.cos(car.heading);
+    const s = Math.sin(car.heading);
+    const back = -car.def.body.lengthM / 2;
+    for (let i = 0; i < count; i++) {
+      const side = (this.rng() - 0.5) * car.def.body.widthM * 0.7;
+      const x = car.x + c * back - s * side;
+      const y = car.y + s * back + c * side;
+      this.pushParticle(x, y, -c * (6 + this.rng() * 5) + car.vx * 0.4, -s * (6 + this.rng() * 5) + car.vy * 0.4, {
+        radiusM: 0.12 + this.rng() * 0.16,
+        growth: 0.8,
+        maxLife: 0.16 + this.rng() * 0.14,
+        alpha: 0.6,
+        kind: i % 2 === 0 ? 'flame' : 'flameCore'
+      });
+    }
+  }
+
+  /** 9.9: smoke at 50 % health, fire at 20 %, out of the damaged end of the car. */
+  spawnDamageFx(car, dt) {
+    const damage = car.damage;
+    if (!damage) return;
+    const c = Math.cos(car.heading);
+    const s = Math.sin(car.heading);
+    const frontHeavy = damage.zones.front >= damage.zones.rear;
+    const offset = (frontHeavy ? 1 : -1) * car.def.body.lengthM * 0.35;
+    const x = car.x + c * offset;
+    const y = car.y + s * offset;
+    if (damage.smoke > 0 && this.rng() < damage.smoke * dt * 26) {
+      this.pushParticle(x, y, car.vx * 0.3, car.vy * 0.3, {
+        radiusM: 0.3,
+        growth: 1.5,
+        maxLife: 1.1 + this.rng() * 0.8,
+        alpha: 0.24 + 0.3 * damage.smoke,
+        kind: 'engineSmoke'
+      });
+    }
+    if (damage.fire > 0 && this.rng() < damage.fire * dt * 30) {
+      this.pushParticle(x + (this.rng() - 0.5) * 0.4, y + (this.rng() - 0.5) * 0.4, car.vx * 0.5, car.vy * 0.5, {
+        radiusM: 0.18 + this.rng() * 0.2,
+        growth: 0.6,
+        maxLife: 0.25 + this.rng() * 0.25,
+        alpha: 0.7,
+        kind: this.rng() < 0.5 ? 'fire' : 'flameCore'
+      });
     }
   }
 
@@ -109,88 +238,5 @@ export class Effects {
   }
 }
 
-/**
- * Drift scoring: points accrue while the car is genuinely sideways, and a
- * sustained drift chains into a combo multiplier. Spinning out loses the
- * un-banked points (the banked total is safe), which is what makes drifting a
- * risk/reward skill instead of a way to farm points by spinning.
- */
-export class DriftScore {
-  constructor(config) {
-    this.config = config;
-    this.tuning = config.tuning.drift;
-    this.reset();
-  }
-
-  reset() {
-    this.score = 0;
-    this.pending = 0;
-    this.combo = 1;
-    this.comboTimer = 0;
-    this.drifting = false;
-    this.driftTime = 0;
-    this.angleDeg = 0;
-    this.lastGain = 0;
-    this.events = [];
-  }
-
-  get total() {
-    return Math.round(this.score + this.pending);
-  }
-
-  /**
-   * @param {number} dt
-   * @param {import('./car.js').Car} car
-   */
-  update(dt, car) {
-    const t = this.tuning;
-    this.events.length = 0;
-    this.angleDeg = Math.abs(car.slipAngleBodyDeg);
-    const fastEnough = car.speedMs > t.minSpeedMs;
-    const sideways = this.angleDeg > t.minSlipAngleDeg;
-    const active = fastEnough && sideways && !car.isAirborne;
-    this.comboTimer = Math.max(0, this.comboTimer - dt);
-
-    if (active) {
-      if (!this.drifting) {
-        this.drifting = true;
-        this.driftTime = 0;
-      }
-      this.driftTime += dt;
-      const angleFactor = clamp01((this.angleDeg - t.minSlipAngleDeg) / 40);
-      const speedFactor = clamp01(car.speedMs / 35);
-      const gain = t.scorePerSecondAtFullSlide * angleFactor * (0.35 + 0.65 * speedFactor) * this.combo * dt;
-      this.pending += gain;
-      this.lastGain = gain / Math.max(dt, 1e-3);
-    } else if (this.drifting) {
-      if (this.driftTime > 0.35) {
-        this.score += this.pending;
-        this.combo = Math.min(t.comboMax, this.combo + t.comboStep * Math.min(2, this.driftTime));
-        this.comboTimer = t.comboWindowSeconds;
-        this.events.push({ type: 'bank', points: Math.round(this.pending), combo: this.combo, angleDeg: this.angleDeg });
-      } else {
-        this.score += this.pending;
-      }
-      this.pending = 0;
-      this.drifting = false;
-      this.driftTime = 0;
-    }
-
-    if (!this.drifting && this.comboTimer <= 0 && this.combo > 1) this.combo = 1;
-    if (!this.drifting && !active && this.comboTimer > 0 && this.combo > 1) {
-      // combo timer counts down; when it expires the multiplier resets
-    }
-
-    // Spin out: the car is rotating much faster than the track can follow.
-    const spinning = Math.abs(car.yawRate) > t.spinOutYawRateRadS && car.speedMs > 3;
-    if (spinning && this.pending > 5) {
-      this.events.push({ type: 'spin', lost: Math.round(this.pending) });
-      this.pending = 0;
-      this.combo = 1;
-      this.comboTimer = 0;
-      this.drifting = false;
-    }
-  }
-}
-
 export { clamp };
+export { DriftScore } from './drift.js';

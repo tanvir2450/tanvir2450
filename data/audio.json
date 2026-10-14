@@ -66,5 +66,34 @@
     ],
     "windStartSpeedMs": 12,
     "windFullSpeedMs": 70
+  },
+  "impact": {
+    "$comment": "9.8 / 9.9 collision stings: side hits are brighter than front/rear thuds",
+    "startHz": 140.0,
+    "endHz": 48.0,
+    "sideStartHz": 320.0,
+    "sideEndHz": 120.0,
+    "gain": 0.5,
+    "seconds": 0.22
+  },
+  "nearMiss": {
+    "$comment": "9.10 the whoosh of passing close to something",
+    "startHz": 1800.0,
+    "endHz": 260.0,
+    "q": 0.8,
+    "toneHz": 180.0,
+    "seconds": 0.35
+  },
+  "nitro": {
+    "$comment": "9.7 the boost layer: a gas hiss plus a rising whine",
+    "hissBandHz": [
+      420,
+      3400
+    ],
+    "hissVolume": 0.22,
+    "whineIdleHz": 180.0,
+    "whineFullHz": 420.0,
+    "whineVolume": 0.12,
+    "audioLayerGain": 1.0
   }
 }

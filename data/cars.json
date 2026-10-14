@@ -16,8 +16,8 @@
         ]
       },
       "body": {
-        "massKg": 1180,
-        "yawInertiaKgM2": 1750,
+        "massKg": 1120,
+        "yawInertiaKgM2": 1661.0,
         "cgToFrontM": 1.42,
         "cgToRearM": 1.16,
         "cgHeightM": 0.58,
@@ -96,7 +96,12 @@
         "maxBrakeTorqueNm": 3200,
         "brakeBiasFront": 0.68,
         "handbrakeTorqueNm": 2600
-      }
+      },
+      "nitro": {
+        "capacity": 88,
+        "power": 0.95
+      },
+      "armor": 1.0
     },
     {
       "id": "sabre_240",
@@ -193,7 +198,12 @@
         "maxBrakeTorqueNm": 3600,
         "brakeBiasFront": 0.64,
         "handbrakeTorqueNm": 3000
-      }
+      },
+      "nitro": {
+        "capacity": 104,
+        "power": 1.05
+      },
+      "armor": 0.95
     },
     {
       "id": "vandal_v8",
@@ -210,8 +220,8 @@
         ]
       },
       "body": {
-        "massKg": 1700,
-        "yawInertiaKgM2": 3200,
+        "massKg": 1900,
+        "yawInertiaKgM2": 3576.5,
         "cgToFrontM": 1.45,
         "cgToRearM": 1.5,
         "cgHeightM": 0.56,
@@ -290,7 +300,12 @@
         "maxBrakeTorqueNm": 4600,
         "brakeBiasFront": 0.62,
         "handbrakeTorqueNm": 3200
-      }
+      },
+      "nitro": {
+        "capacity": 92,
+        "power": 1.0
+      },
+      "armor": 1.25
     },
     {
       "id": "terra_rx",
@@ -387,7 +402,12 @@
         "maxBrakeTorqueNm": 3600,
         "brakeBiasFront": 0.55,
         "handbrakeTorqueNm": 2800
-      }
+      },
+      "nitro": {
+        "capacity": 100,
+        "power": 1.0
+      },
+      "armor": 1.1
     },
     {
       "id": "vortex_9",
@@ -484,7 +504,12 @@
         "maxBrakeTorqueNm": 4200,
         "brakeBiasFront": 0.66,
         "handbrakeTorqueNm": 3000
-      }
+      },
+      "nitro": {
+        "capacity": 122,
+        "power": 1.15
+      },
+      "armor": 0.9
     }
   ]
 }

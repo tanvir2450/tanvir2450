@@ -31,6 +31,19 @@ export const HUD_ELEMENT_IDS = {
   gripRear: 'grip-rear',
   surface: 'surface',
   wheelspin: 'wheelspin',
+  nitroFill: 'nitro-fill',
+  nitroState: 'nitro-state',
+  healthFill: 'health-fill',
+  healthValue: 'health-value',
+  zoneFront: 'zone-front',
+  zoneRear: 'zone-rear',
+  zoneLeft: 'zone-left',
+  zoneRight: 'zone-right',
+  damageNote: 'damage-note',
+  coins: 'coins',
+  stars: 'stars',
+  challengeNote: 'challenge-note',
+  closeCall: 'close-call',
   driftPanel: 'drift-panel',
   driftScore: 'drift-score',
   driftCombo: 'drift-combo',
@@ -85,7 +98,8 @@ export async function boot() {
     const track = buildTrack(data.track, config);
 
     const renderer = new Renderer(els.game, config, track);
-    const input = new InputManager(window);
+    // 9.4: the analog input sources are configured from data/tuning.json.
+    const input = new InputManager(window, config.tuning.input);
     const audio = new AudioEngine(config.audio);
     const hud = new Hud(els, config, track);
 
@@ -120,6 +134,7 @@ export async function boot() {
     input.bindTouch(document.getElementById('touch-throttle'), 'throttle');
     input.bindTouch(document.getElementById('touch-brake'), 'brake');
     input.bindTouch(document.getElementById('touch-handbrake'), 'handbrake');
+    input.bindTouch(document.getElementById('touch-nitro'), 'nitro');
     const steerLeft = document.getElementById('touch-left-btn');
     const steerRight = document.getElementById('touch-right-btn');
     for (const [element, sign] of [
@@ -138,6 +153,19 @@ export async function boot() {
       element.addEventListener('pointercancel', release);
       element.addEventListener('pointerleave', release);
     }
+
+    // 9.4: drag anywhere on the stage to steer (analog), or tilt the device.
+    input.bindSteerPad(document.getElementById('touch-steer-pad'));
+    const tiltButton = document.getElementById('touch-tilt');
+    tiltButton?.addEventListener('click', async () => {
+      if (input.tilt.enabled) {
+        input.disableTilt();
+        hud.message('Tilt steering off', 2);
+        return;
+      }
+      const ok = await input.enableTilt(tiltButton);
+      hud.message(ok ? 'Tilt steering on - hold the phone level' : 'Tilt steering needs a device with a motion sensor', 3);
+    });
 
     /* ---- audio needs a gesture --------------------------------- */
     const unlockAudio = async () => {

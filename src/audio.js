@@ -98,7 +98,19 @@ export class AudioEngine {
     const surface = makeNoise('bandpass', (cfg.surface.dustBandHz[0] + cfg.surface.dustBandHz[1]) / 2, 1.1, 0);
     const wind = makeNoise('bandpass', (cfg.surface.windBandHz[0] + cfg.surface.windBandHz[1]) / 2, 0.8, 0);
 
-    this.nodes = { master, engineBus, engineFilter, harmonics, tire, surface, wind };
+    // 9.7: the nitro layer is its own noise bed (a jet of gas) plus a saw whine,
+    // faded in only while the tank is lit.
+    const nitroHiss = makeNoise('bandpass', cfg.nitro.hissBandHz[0], 0.9, 0);
+    const nitroWhine = ctx.createOscillator();
+    nitroWhine.type = 'sawtooth';
+    nitroWhine.frequency.value = cfg.nitro.whineIdleHz;
+    const nitroWhineGain = ctx.createGain();
+    nitroWhineGain.gain.value = 0;
+    nitroWhine.connect(nitroWhineGain);
+    nitroWhineGain.connect(master);
+    nitroWhine.start();
+
+    this.nodes = { master, engineBus, engineFilter, harmonics, tire, surface, wind, nitroHiss, nitroWhine, nitroWhineGain };
   }
 
   setMuted(muted) {
@@ -117,21 +129,53 @@ export class AudioEngine {
     });
   }
 
-  playImpact(strength = 0.5) {
+  /**
+   * 9.8 / 9.9: an impact. Front and rear hits are a low thud; side hits are
+   * brighter and shorter (a scrape), so what you hear tells you where you were
+   * hit before the HUD does.
+   */
+  playImpact(strength = 0.5, zone = 'front') {
     if (!this.ready || !this.nodes || this.muted) return;
     const ctx = this.context;
+    const cfg = this.cfg;
+    const side = zone === 'left' || zone === 'right';
+    const now = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = 120;
-    const now = ctx.currentTime;
-    gain.gain.setValueAtTime(clamp01(strength) * 0.5, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-    osc.frequency.exponentialRampToValueAtTime(48, now + 0.2);
+    osc.type = side ? 'square' : 'triangle';
+    osc.frequency.value = side ? cfg.impact.sideStartHz : cfg.impact.startHz;
+    gain.gain.setValueAtTime(clamp01(strength) * cfg.impact.gain, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + cfg.impact.seconds);
+    osc.frequency.exponentialRampToValueAtTime(side ? cfg.impact.sideEndHz : cfg.impact.endHz, now + cfg.impact.seconds * 0.9);
     osc.connect(gain);
     gain.connect(this.nodes.master);
     osc.start(now);
-    osc.stop(now + 0.25);
+    osc.stop(now + cfg.impact.seconds + 0.05);
+  }
+
+  /** 9.10: the whoosh of a close call. */
+  playNearMiss(strength = 0.5) {
+    if (!this.ready || !this.nodes || this.muted) return;
+    const ctx = this.context;
+    const cfg = this.cfg.nearMiss;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(cfg.startHz, now);
+    filter.frequency.exponentialRampToValueAtTime(cfg.endHz, now + cfg.seconds);
+    filter.Q.value = cfg.q;
+    osc.type = 'sawtooth';
+    osc.frequency.value = cfg.toneHz;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(clamp01(0.16 + strength * 0.3), now + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + cfg.seconds);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.nodes.master);
+    osc.start(now);
+    osc.stop(now + cfg.seconds + 0.05);
   }
 
   /**
@@ -194,6 +238,23 @@ export class AudioEngine {
     this.nodes.surface.gain.gain.setTargetAtTime(loose ? looseGain : 0, now, 0.08);
     const windPct = clamp01((telemetry.speedMs - cfg.surface.windStartSpeedMs) / Math.max(1, cfg.surface.windFullSpeedMs - cfg.surface.windStartSpeedMs));
     this.nodes.wind.gain.gain.setTargetAtTime(windPct * cfg.surface.windVolume, now, 0.15);
+
+    /* ---- 9.7 nitro layer --------------------------------------- */
+    if (this.nodes.nitroHiss) {
+      const active = Boolean(telemetry.nitro?.active);
+      const pct = clamp01(telemetry.nitro?.pct ?? 0);
+      this.nodes.nitroHiss.gain.gain.setTargetAtTime(
+        active ? cfg.nitro.hissVolume * cfg.nitro.audioLayerGain * (1 + pct) : 0,
+        now,
+        0.08
+      );
+      this.nodes.nitroWhineGain.gain.setTargetAtTime(active ? cfg.nitro.whineVolume * cfg.nitro.audioLayerGain : 0, now, 0.08);
+      this.nodes.nitroWhine.frequency.setTargetAtTime(
+        cfg.nitro.whineIdleHz + (cfg.nitro.whineFullHz - cfg.nitro.whineIdleHz) * clamp01(telemetry.speedMs / 90),
+        now,
+        0.12
+      );
+    }
   }
 
   dispose() {

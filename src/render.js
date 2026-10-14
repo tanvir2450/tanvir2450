@@ -40,6 +40,7 @@ export class Renderer {
     this.debug = false;
     this.grassPattern = null;
     this.roadPath = null;
+    this.speedLinePhase = 0;
     this.resize();
   }
 
@@ -113,12 +114,24 @@ export class Renderer {
     this.drawSkidMarks(ctx, frame.effects);
     this.drawDecor(ctx);
     this.drawParticles(ctx, frame.effects, false);
+
+    // 9.10: rivals are drawn like the player's car, minus the input effects.
+    if (frame.traffic?.rivals?.length) {
+      for (const rival of frame.traffic.rivals) {
+        const rivalPose = this.carPose(rival.car, frame.alpha);
+        this.drawCar(ctx, rival.car, rivalPose, { brake: rival.car.brakeRequest }, scale, true);
+      }
+    }
+
     const pose = this.carPose(frame.car, frame.alpha);
     this.drawCar(ctx, frame.car, pose, frame.input, scale);
+    if (frame.traffic?.slipstream?.active) this.drawAirLines(ctx, frame.car, frame.traffic.slipstream, scale);
     this.drawParticles(ctx, frame.effects, true);
     if (this.debug) this.drawDebug(ctx, frame.car, pose, scale, frame);
     ctx.restore();
 
+    // 9.7: nitro speed lines live in screen space (they are a lens effect).
+    this.drawSpeedLines(ctx, frame);
     this.drawGateMarker(ctx, frame);
   }
 
@@ -277,7 +290,22 @@ export class Renderer {
       // dust stays behind the car, smoke and spray are drawn over it
       const isForeground = p.kind !== 'dust';
       if (isForeground !== foreground) continue;
-      const color = p.kind === 'dust' ? '150,124,84' : p.kind === 'spray' ? '200,220,240' : '196,196,200';
+      const color =
+        p.kind === 'dust'
+          ? '150,124,84'
+          : p.kind === 'spray'
+            ? '200,220,240'
+            : p.kind === 'spark'
+              ? '255,214,120'
+              : p.kind === 'flame' || p.kind === 'fire'
+                ? '255,140,60'
+                : p.kind === 'flameCore'
+                  ? '190,225,255'
+                  : p.kind === 'engineSmoke'
+                    ? '90,90,96'
+                    : p.kind === 'air'
+                      ? '215,238,255'
+                      : '196,196,200';
       ctx.fillStyle = `rgba(${color},${p.alpha * p.life})`;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.radiusM * (1.4 - p.life * 0.4), 0, Math.PI * 2);
@@ -298,7 +326,7 @@ export class Renderer {
     };
   }
 
-  drawCar(ctx, car, pose, input, scale) {
+  drawCar(ctx, car, pose, input, scale, isRival = false) {
     const body = car.def.body;
     const render = car.def.render;
     const halfLength = body.lengthM / 2;
@@ -356,9 +384,11 @@ export class Renderer {
     ctx.fillRect(-halfLength * 0.92, -0.12, body.lengthM * 0.8, 0.24);
     ctx.globalAlpha = 1;
 
-    // lights
-    const braking = (input?.brake ?? 0) > 0.05;
-    ctx.fillStyle = braking ? '#ff3b30' : '#8d1b16';
+    // 9.5 brake lights: driven by the car's own brake state (which includes the
+    // handbrake) rather than by the raw input, so an autopilot car lights up too.
+    const braking = (car.brakeLight ?? (input?.brake ?? 0) > 0.05) > 0.15;
+    const lightAlpha = braking ? 1 : 0.45;
+    ctx.fillStyle = braking ? '#ff3b30' : `rgba(141,27,22,${lightAlpha})`;
     ctx.fillRect(-halfLength + 0.02, -halfWidth * 0.86, 0.16, halfWidth * 0.5);
     ctx.fillRect(-halfLength + 0.02, halfWidth * 0.36, 0.16, halfWidth * 0.5);
     if (braking) {
@@ -371,6 +401,128 @@ export class Renderer {
     ctx.fillRect(halfLength - 0.2, -halfWidth * 0.9, 0.18, halfWidth * 0.55);
     ctx.fillRect(halfLength - 0.2, halfWidth * 0.35, 0.18, halfWidth * 0.55);
 
+    // 9.9: scratches and dents, one overlay per hit zone, driven straight by the
+    // zone damage so what you see is what the physics is doing.
+    this.drawDamage(ctx, car, body);
+
+    // 9.7: an active nitro tank glows at the exhaust.
+    if (car.nitroState?.active) {
+      ctx.fillStyle = 'rgba(120,200,255,0.85)';
+      ctx.beginPath();
+      ctx.arc(-halfLength - 0.05, -halfWidth * 0.5, 0.16, 0, Math.PI * 2);
+      ctx.arc(-halfLength - 0.05, halfWidth * 0.5, 0.16, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (isRival) {
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(-0.12, -halfWidth * 0.28, 0.24, halfWidth * 0.56);
+    }
+
+    ctx.restore();
+  }
+
+  /** 9.9 scratches (light damage) and dents (heavy), per hit zone. */
+  drawDamage(ctx, car, body) {
+    const zones = car.damage?.zones;
+    if (!zones) return;
+    const max = car.damage.zoneMax || 25;
+    const halfLength = body.lengthM / 2;
+    const halfWidth = body.widthM / 2;
+    const paint = (pct, fn) => {
+      if (pct <= 0.05) return;
+      ctx.save();
+      fn(pct);
+      ctx.restore();
+    };
+    // scratches: light lines across the damaged panel
+    ctx.strokeStyle = 'rgba(20,20,22,0.55)';
+    ctx.lineWidth = 0.05;
+    paint(zones.front / max, (pct) => {
+      ctx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const y = -halfWidth * 0.6 + (i * halfWidth * 0.6);
+        ctx.moveTo(halfLength * 0.55, y);
+        ctx.lineTo(halfLength * 0.95, y + 0.12 - 0.2 * pct);
+      }
+      ctx.stroke();
+    });
+    paint(zones.rear / max, (pct) => {
+      ctx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const y = -halfWidth * 0.6 + (i * halfWidth * 0.6);
+        ctx.moveTo(-halfLength * 0.55, y);
+        ctx.lineTo(-halfLength * 0.95, y + 0.12 - 0.2 * pct);
+      }
+      ctx.stroke();
+    });
+    // side damage shows as a dark crumpled band down that flank
+    const side = (pct, sign) => {
+      if (pct <= 0.05) return;
+      ctx.fillStyle = `rgba(30,30,34,${0.2 + 0.45 * pct})`;
+      ctx.beginPath();
+      ctx.roundRect(-halfLength * 0.6, sign * (halfWidth - 0.16) - 0.08, body.lengthM * 0.55, 0.22, 0.08);
+      ctx.fill();
+    };
+    side(zones.left / max, -1);
+    side(zones.right / max, 1);
+    // dents: a scuff blob once a zone is over half destroyed
+    ctx.fillStyle = 'rgba(12,12,14,0.5)';
+    const dent = (pct, x, y, rx, ry) => {
+      if (pct < 0.5) return;
+      ctx.beginPath();
+      ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    dent(zones.front / max, halfLength * 0.7, 0, 0.34, halfWidth * 0.5);
+    dent(zones.rear / max, -halfLength * 0.7, 0, 0.34, halfWidth * 0.5);
+    dent(zones.left / max, 0, -halfWidth * 0.85, halfLength * 0.4, 0.14);
+    dent(zones.right / max, 0, halfWidth * 0.85, halfLength * 0.4, 0.14);
+  }
+
+  /** 9.10: the air lines that show a slipstream, converging on the car. */
+  drawAirLines(ctx, car, slipstream, scale) {
+    const strength = slipstream.strength ?? 0;
+    if (strength <= 0.02) return;
+    ctx.save();
+    ctx.translate(car.x, car.y);
+    ctx.rotate(car.heading);
+    ctx.strokeStyle = `rgba(210,236,255,${0.12 + 0.3 * strength})`;
+    ctx.lineWidth = Math.max(0.05, 1.4 / scale);
+    ctx.beginPath();
+    for (let i = -2; i <= 2; i++) {
+      const y = i * (car.def.body.widthM * 0.42);
+      const length = 4 + 9 * strength;
+      ctx.moveTo(-length, y * (1.6 - 0.5 * strength));
+      ctx.lineTo(-1.2, y * 0.5);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** 9.7: speed lines while the nitro is lit (screen space, so they feel fast). */
+  drawSpeedLines(ctx, frame) {
+    const { car } = frame;
+    if (!car?.nitroState?.active) return;
+    const w = this.viewport.width;
+    const h = this.viewport.height;
+    const cx = w / 2;
+    const cy = h / 2;
+    const count = Math.round(this.config.tuning.nitro.speedLinesPerSecond);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(190,225,255,0.28)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + this.speedLinePhase;
+      const radius = Math.min(w, h) * (0.32 + ((i * 37) % 60) / 100);
+      const length = 30 + ((i * 53) % 70);
+      const x = cx + Math.cos(angle) * radius;
+      const y = cy + Math.sin(angle) * radius * 0.7;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length * 0.7);
+    }
+    ctx.stroke();
     ctx.restore();
   }
 

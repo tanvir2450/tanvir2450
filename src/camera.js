@@ -20,6 +20,8 @@ export class Camera {
     this.zoomSteps = [1, 1.3, 0.75];
     this.zoomStepIndex = 0;
     this.zoomPreference = 1;
+    // 9.7: nitro pulls the camera back a little (the "FOV" cue).
+    this.boostZoom = 1;
     this.shake = 0;
     this.shakeX = 0;
     this.shakeY = 0;
@@ -48,7 +50,7 @@ export class Camera {
 
     // Zoom out with speed so fast sections stay readable.
     const speedPct = smoothstep(0, 70, car.speedMs);
-    const targetZoom = lerp(t.baseZoom, t.baseZoom * (1 - t.speedZoomPct), speedPct) * this.zoomPreference;
+    const targetZoom = lerp(t.baseZoom, t.baseZoom * (1 - t.speedZoomPct), speedPct) * this.zoomPreference * this.boostZoom;
     this.zoom = expApproach(this.zoom, clamp(targetZoom, t.minZoom, t.maxZoom), 2.5, dt);
 
     if (this.shake > 0) {

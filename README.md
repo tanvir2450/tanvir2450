@@ -5,6 +5,11 @@ problem: a fixed 60 Hz simulation, a torque-curve drivetrain with a five-speed
 autobox, and a per-axle tire model with a friction ellipse. It feels like an
 arcade game to play and like a vehicle model when you measure it.
 
+On top of the vehicle sit the mechanics the arcade layer needs — speed-sensitive
+steering, front-biased brakes, scored drifts, per-car nitro, mass-driven
+collisions, hit-zone damage and rivals to slipstream past (sections 9.4-9.10
+below) — and every number any of them uses lives in `data/`.
+
 Everything the tires, engine, gearbox and chassis do is data. There is no magic
 number in the engine code: `data/tuning.json` holds the global constants and
 `data/cars.json` holds the five cars, all in real units.
@@ -12,6 +17,7 @@ number in the engine code: `data/tuning.json` holds the global constants and
 ```
 npm start          # http://localhost:8000  (zero-dependency static server)
 npm test           # boots the real front-end headless and drives a lap
+                   #   + the 9.4-9.10 mechanics suite
 npm run bench      # measures every car: accel, braking, cornering, drift, limits
 npm run track      # re-generates data/track.json from tools/build-track.mjs
 ```
@@ -23,16 +29,23 @@ npm run track      # re-generates data/track.json from tools/build-track.mjs
 | `W` / `↑` | throttle |
 | `S` / `↓` | brake (reverse when stopped) |
 | `A` `D` / `←` `→` | steer |
-| `Space` / `Shift` | handbrake |
+| `Space` / `Shift` | handbrake (locks the rear for 0.4 s) |
+| `N` | nitro |
+| `F` | repair (first quick repair of a session is free) |
 | `R` | reset to the grid |
 | `T` | driving assists on/off |
+| `Y` | difficulty - how much steering help touch players get |
 | `O` | demo mode — the autopilot drives, any control takes the car back |
 | `V` | camera zoom (normal / close / wide) |
 | `G` | debug vectors (forces, slip, gate) |
 | `M` `P` `H` | mute / pause / help |
 
-Touch buttons and a gamepad are also wired (`input.js`); keyboard steering is
-full-lock and rate-limited by the car, analog sticks stay analog.
+Touch buttons and a gamepad are also wired (`input.js`). Steering is analog on
+every device that can give it a real value: drag anywhere on the glass (the
+horizontal travel from where the finger landed is the steering angle), tilt the
+device (the `TILT` button permissions + zeros it), or move a gamepad stick.
+Keyboard steering is on/off, so it goes full-lock and is shaped by the car's own
+ramp - that is what stops keyboard steering from being twitchy.
 
 ## The cars
 
@@ -43,21 +56,25 @@ regression test for the tire model.
 | | Kalos GT | Sabre 240 | Vandal V8 | Terra RX | Vortex 9 |
 | --- | --- | --- | --- | --- | --- |
 | layout | FWD | RWD | RWD | AWD | AWD |
-| mass | 1180 kg | 1320 kg | 1700 kg | 1330 kg | 1090 kg |
-| 0–100 km/h | 6.87 s | 3.97 s | 4.23 s | 3.87 s | 2.05 s |
-| 400 m | 14.73 s | 12.00 s | 12.45 s | 12.15 s | 9.05 s |
-| top speed | 234 km/h | 273 km/h | 261 km/h | 257 km/h | 330 km/h |
-| 100–0 km/h | 40.0 m | 39.9 m | 44.1 m | 42.0 m | 29.3 m |
-| corner 120 km/h, dry | 0.75 g | 0.91 g | 0.75 g | 0.85 g | 1.06 g |
-| corner 80 km/h, full lock | 0.79 g | 0.83 g | 0.70 g | 0.82 g | 0.97 g |
-| corner 100 km/h, wet | 0.61 g | 0.62 g | 0.51 g | spin | 0.71 g |
-| handbrake drift, avg slip | 53° | 33° | 43° | 51° | 37° |
-| donut wheelspin | 0.00 | 0.98 | 0.63 | 0.30 | 0.83 |
+| mass | 1120 kg | 1320 kg | 1900 kg | 1330 kg | 1090 kg |
+| 0–100 km/h | 6.87 s | 3.97 s | 4.72 s | 3.87 s | 2.05 s |
+| 400 m | 14.67 s | 12.00 s | 12.97 s | 12.15 s | 9.05 s |
+| top speed | 235 km/h | 273 km/h | 258 km/h | 257 km/h | 330 km/h |
+| 100–0 km/h | 39.0 m | 39.9 m | 49.3 m | 42.0 m | 29.3 m |
+| corner 120 km/h, dry | 0.81 g | 0.90 g | 0.74 g | 0.84 g | 1.06 g |
+| corner 80 km/h, full lock | 0.79 g | 0.82 g | 0.69 g | 0.81 g | 0.96 g |
+| corner 100 km/h, wet | 0.60 g | 0.61 g | 0.51 g | spin | 0.71 g |
+| handbrake drift, avg slip | 52° | 33° | 44° | 51° | 37° |
+| donut wheelspin | 0.00 | 0.98 | 0.49 | 0.30 | 0.83 |
+| nitro tank / power | 88 / 0.95x | 104 / 1.05x | 92 / 1.00x | 100 / 1.00x | 122 / 1.15x |
+| armor | 1.00 | 0.95 | 1.25 | 1.10 | 0.90 |
 
-Read the last two rows as character: the front-drive hatch cannot donut (it
-washes out and drags you straight), the rally car spins on a wet lap because it
-always has drive to the rear, the hyper car brakes at 1.33 g, and the muscle car
-is the one that will bite you on a trailing throttle.
+Read the drift and donut rows as character: the front-drive hatch cannot donut
+(it washes out and drags you straight), the rally car spins on a wet lap because
+it always has drive to the rear, the hyper car brakes at 1.33 g, and the muscle
+car is the one that will bite you on a trailing throttle. The last two rows are
+9.7/9.9 data: the hyper car carries the biggest nitro tank and the thinnest
+armor, the muscle car is the one that shrugs off a hit.
 
 ## Section 9.1 — Setup
 
@@ -154,18 +171,184 @@ body integration in `car.js`.
   between the axles at load time: negative biases front grip (safe, front-drive
   hatch), positive biases the rear (looser, rear-drive coupé and muscle car).
 
+## Section 9.4 — Steering
+
+`src/steering.js`, configured by `tuning.steering` + `tuning.input`, locked by
+each car's `steering` block.
+
+* **The wheel is not a switch.** The input is ramped (`keyboardRampMs`, 120 ms),
+  then the wheel travels toward the target at `steerRateDegPerSec` (300 °/s) and
+  returns at `returnRateDegPerSec` (220 °/s). Both are divided by the car's own
+  lock, so a quicker rack turns at the same rate *in input space*.
+* **Speed-sensitive lock.** `speedSteerCurve` gives the fraction of lock
+  available at a speed: full lock at a standstill, about a quarter of it at
+  320 km/h. The hatch goes from ~32° of steering at rest to ~8° flat out. A
+  handbrake entry adds `handbrakeSteerBoostDeg`, nitro takes `steerAnglePct`
+  (0.85) away, and side damage (9.9) adds a pull to one side.
+* **Analog on touch, not just on/off.** The whole stage is a steering pad
+  (`input.padDeadZonePx` 6 px, `padFullLockPx` 74 px, a `padResponseExponent`
+  0.85 curve), and releasing lets the wheel centre at `padReleasePerSecond`
+  instead of snapping. Tilt steering reads the device roll, dead-zoned and
+  zeroed at the angle it is being held at, behind the `TILT` button (iOS asks
+  for permission there, which is why it must be a button).
+* **Touch assist.** On touch devices a gentle nudge blends toward the road
+  direction - faded in only after `assistHoldSeconds` (0.85 s) of a held input,
+  so it is help and not autopilot, never while drifting (it releases at
+  `assistDriftReleasePerSecond`, eight times faster than the normal
+  `assistReleasePerSecond`), and capped at `assistMaxSteerPct`. `Y` cycles the difficulty and harder levels help *less*:
+  `tuning.assists.difficulty.levels` authors it (casual 1.0, normal 0.68, pro
+  0.38, master 0 - no help).
+
+## Section 9.5 — Brakes
+
+`brakes` in `data/tuning.json` and `cars.json`, solved in `car.js` through the
+same friction ellipse as the tires.
+
+* **Front-biased.** `brakeBiasFront` (0.55-0.68 per car) splits the torque;
+  the load transfer of the stop keeps feeding the front, so trail braking
+  rotates the car while straight-line braking does not.
+* **Capped by grip, never by the pedal.** The brake force runs through
+  `combinedSlipScale()`, so it is capped by what the tires can take. `absEnabled`
+  holds the demand at `absUsageTarget` (0.96) to stay just under the lock, which
+  is why 100-0 km/h is a believable 39-49 m and why braking while turning
+  slides both axles instead of ploughing straight on.
+* **Brake lights on the sprite.** `brakeLight` follows the pedal (over
+  `brakeLightOnThreshold`) with a short latch, and the renderer draws two red
+  lights on the car.
+* **Handbrake.** Pulls the rear brake and drops rear grip to
+  `handbrakeRearGripScale` (0.30); for `handbrakeLockSeconds` (0.4 s) the rear is
+  *locked* at `handbrakeLockGripScale` (0.35) grip, which is the window in which
+  a slide actually starts. Re-triggering while held is blocked, and a
+  `handbrakeCooldownSeconds` (1.2 s) cooldown stops the lock from being spammed
+  into a free drift button.
+
+## Section 9.6 — Drift
+
+`src/drift.js` (`DriftScore`), `tuning.drift`.
+
+A drift starts above `minSlipAngleDeg` (15°) at over `minSpeedMs` and lasts
+while the slide does:
+
+* **Score.** Points accrue at up to `scorePerSecondAtFullSlide` (520/s), scaled
+  by how far past `minSlipAngleDeg` the slide is (saturating
+  `fullSlideAngleSpanDeg` 40° later) and by speed (full marks at
+  `fullScoreSpeedMs` 35 m/s, never below `minSpeedFactor` 0.35), times the
+  combo. They are held as `pending` until the drift ends; a slide shorter than
+  `minBankSeconds` (0.35 s) is not worth banking.
+* **Combo.** Chaining slides inside `comboWindowSeconds` (2.6 s) adds
+  `comboStep` (0.25) per chain, capped at `comboMax` (6x).
+* **Nitro charges faster.** Pending points convert at `nitroPerPoint` (0.05)
+  into the tank as the drift runs, so a long slide is how you refill.
+* **Clean exit.** Leave the slide with at least `cleanExitMinPoints` (300)
+  banked and the score is added to the total and a `cleanExitBoostPct` (9 %)
+  boost of engine force and top speed is paid for `cleanExitBoostSeconds`
+  (0.7 s).
+* **Crashing cancels it.** A crash inside `crashCancelWindowSeconds` of the
+  drift (or a spin above `spinOutYawRateRadS` with `spinMinSpeedMs`) throws the
+  pending points and the combo away - as does a bare `cancelMinPoints` of them
+  when the car spins.
+* **It pays.** Smoke, skid marks and screech come from the effects layer off the
+  same slip signal, and the banked score feeds the wallet: `coinsPerPoint`,
+  `stylePerPoint`, the star challenges in `tuning.economy.challenges` and the
+  repair fund for 9.9.
+
+## Section 9.7 — Nitro
+
+`src/nitro.js`, per-car tank in `cars.json` (`nitro.capacity` 88-122 units,
+`nitro.power` 0.95-1.15x).
+
+* **Boost.** Active: +40 % engine force (`forceMultiplier`) and +20 % top speed
+  (`topSpeedMultiplier`) through `engine.js`'s `powerScale`/`speedCapScale`, with
+  the steering lock reduced to `steerAnglePct` (0.85) so the extra speed still
+  has to be driven. Drains at `drainPerSecond` (30/s): a full tank is ~3-4 s.
+* **Tank fill.** Drifting (9.6), near misses (`fillFromNearMissPct`, 14 %),
+  slipstreaming (`fillFromSlipstreamPerSecond`, capped at
+  `fillFromSlipstreamMaxPct`). Needs `minToActivatePct` (12 %) to light.
+* **Empty = overheat.** Held to empty it locks out for `overheatLockoutMs`
+  (1.5 s) and cannot be re-lit inside the lockout even if it has refilled.
+* **Presentation.** A flame trail, `speedLinesPerSecond` speed lines, a
+  `cameraZoomOutPct` (6 %) pull-back and an audio layer (a hiss plus a whine
+  that rises with speed) - all driven from the tank's `active`/`pct`.
+
+## Section 9.8 — Collisions
+
+`resolveCarCollision()` in `src/world.js` plus `tuning.collision`.
+
+* **Mass decides.** Every car carries its real mass (1090-1900 kg). Contact is
+  a SAT test; the separation is split by mass ratio, so the muscle car shoves
+  the hyper car and barely notices. Two-body impulses include the rotational
+  term at the contact point, so a hit off-centre spins the car.
+* **The bounce is relative.** Restitution is `carRestitution` (0.22) for
+  car-to-car and `wallRestitution` (0.28) for walls, applied to the *relative*
+  velocity along the normal: a gentle touch slides, a square hit at speed
+  bounces. Friction along the tangent is what makes an angled hit scrub speed.
+* **Impact energy is the currency.** The solver reports the closing speed and
+  the kinetic energy of the collision (reduced mass, half-v-squared); that
+  energy feeds 9.9's damage, and its `speedMs` decides hit-stop, shake and audio.
+* **Hit-stop and shake.** Impacts over `hitStopMinImpactMs` (6 m/s) freeze the
+  sim for `hitStopMs` (55 ms, scaled up to `hitStopMaxMs` 90 ms for the biggest
+  hits) - the car does not move, the camera does - and the camera shakes with
+  `hitStopShakeScale`.
+* **Wall scrapes.** Rubbing a wall above `scrapeSparkSpeedMs` (3.2 m/s) takes
+  `wallScrapeSpeedLoss` (16 %) of the speed loss as a scrape rather than a hard
+  stop, sprays sparks and grinds `damage.scrapeDamagePerSecond` off the car, so
+  a clip on an apex costs you a little instead of ending the lap.
+
+## Section 9.9 — Damage
+
+`src/damage.js` (`DamageModel`), `tuning.damage` + `tuning.economy`.
+
+* **Hit zones.** Every impact is sorted into front / rear / left / right from
+  the impact normal against the car's heading (with a `zoneBias` weighting:
+  a side hit hurts more), and turned into damage by
+  `damage = energy * armorScale / armor`. Armor is per car - a hyper car bends
+  where a muscle car shrugs.
+* **Health and effects.** Health is 100 over four 25-point zones. Front damage
+  past `frontEffectAtZonePct` (55 %) costs top speed (up to
+  `topSpeedLossMaxPct` 35 %) and starts engine smoke; side damage past 45 %
+  pulls the wheel up to `steerPullMaxDeg` (3.2°); rear damage past 45 % costs up
+  to `accelLossMaxPct` (40 %) of the acceleration. Total health drives the rest:
+  scratches and dents, smoke at 50 %, fire at 20 %, a wreck at 0.
+* **Repair.** `F` repairs: `repairCostPerDamage` (7 coins per point, minimum
+  40) from the wallet, or the first `freeQuickRepairs` (1) of a session is free
+  and restores `quickRepairHealthPct` (55 %). Coins come from laps, drifts, near
+  misses and stars.
+* **HUD.** A health bar plus one chip per zone, and a note naming what the car
+  is currently suffering from.
+
+## Section 9.10 — Slipstream & traffic
+
+`src/traffic.js`, `tuning.traffic`.
+
+* **Rivals are real cars.** `count` (3) of them, driven by the same autopilot
+  and the same Car class as the player, on a pace ceiling (`pacePct`
+  0.74/0.83/0.9) with a lane offset. A rival that drops below `stuckSpeedMs`
+  (1.5 m/s) for `respawnSeconds` is put back on the line `respawnAheadM` (12 m)
+  further on at `respawnSpeedMs`, so a road block never becomes permanent.
+* **Slipstream.** Inside `slipstreamRangeM` (34 m) and a
+  `slipstreamHalfAngleDeg` (24°) cone behind a rival at over
+  `slipstreamMinSpeedMs` (12 m/s) the car gets +`slipstreamSpeedPct` (6 %) of
+  engine force and charges nitro, with air lines drawn between the two cars.
+* **Near misses.** Passing a rival or track-side object within
+  `nearMissDistanceM` (2.7 m) at speed pops a "Close Call!" popup, pays style
+  points and coins and adds `fillFromNearMissPct` (14 %) to the tank, with a
+  `nearMissCooldownSeconds` (1.1 s) cooldown per object.
+* **They can be hit.** A collision with a rival runs 9.8's impulse and 9.9's
+  damage on both cars, scaled by `contactDamageScale`.
+
 ## Data
 
 | File | What lives there |
 | --- | --- |
-| `data/tuning.json` | every global constant: world/grid, collision, tire model, drivetrain, simulation, assists, skid, camera, debug |
+| `data/tuning.json` | every global constant: world/grid, collision, tire model, drivetrain, simulation, assists, skid, camera, debug, plus the 9.4-9.10 mechanics (steering/input, brakes, drift, nitro, damage, traffic, economy) |
 | `data/cars.json` | the five cars in real units: body, inertia, CG, tires, wheels, torque curve, drivetrain, steering, brakes, audio |
 | `data/surfaces.json` | per-surface grip/drag, skid intensity, particle type, render colours |
 | `data/audio.json` | every WebAudio constant (engine harmonics, dips, limiter gate, screech, wind) |
 | `data/track.json` | the circuit — generated by `tools/build-track.mjs` (edit its `DESIGN` block, then re-run) |
 
-`config.js` merges the files, derives the values that must not be recomputed per
-frame, and — with `{strictTuning: true}` — refuses to start if a required tuning
+`config.js` merges the files (including the steering-lock curve, the nitro
+tanks and the damage resistances per car, and the difficulty levels), derives the
+values that must not be recomputed per frame, and — with `{strictTuning: true}` — refuses to start if a required tuning
 number is missing. That is how "nothing is hardcoded" is enforced rather than
 promised: delete a key from the JSON and the app tells you which one.
 
@@ -177,6 +360,13 @@ promised: delete a key from the JSON and the app tells you which one.
   believable (0–100 under 1.6 s, cornering above 1.75 g, more grip on wet than
   dry, a top speed the gearing cannot reach...). `--json` for scripting.
 * `tools/build-track.mjs` — writes `data/track.json` from a design block.
+* `tests/mechanics.test.js` — the 9.4-9.10 mechanics, measured: steering lock
+  and rates, the analog touch/tilt mapping, brake bias and the handbrake lock
+  window, drift scoring/clean exit, nitro force and overheat, two-body collision
+  momentum, hit zones and repair, slipstream and near misses. It runs the real
+  modules against a flat asphalt world, so a failure names the mechanic rather
+  than the scenery. `node --test tests/mechanics.test.js` (a few seconds;
+  `npm test` runs everything).
 * `tests/integration.test.js` + `tests/dom-stub.mjs` — boots the real
   `boot.js`/`render.js`/`hud.js`/`game.js` against a stub DOM and a file-backed
   `fetch`, then: checks every HUD id exists in `index.html`, drives with the
@@ -199,6 +389,16 @@ rally car will always find drive and is the fastest way to learn a wet lap.
 `T` toggles the assists (a mild counter-steer and stability aid on top of the
 raw model) for anyone who wants them.
 
+The arcade layer rewards the same things. Drift scoring wants a *held* slide
+above 15° finished cleanly: bank the points and the car gets a small boost, bail
+out or crash and they are gone, so the fastest line and the showiest line are
+not the same lap. Nitro is not a button you press on the straight - it is paid
+for by drifting, sitting in a slipstream and passing close, so the fast lap uses
+the traffic. And damage is a real cost: a rear hit that takes 40 % of your
+acceleration is worth more than the half-second you saved on the kerb, which is
+what makes `F` (repair) and the free quick repair a decision rather than a
+formality.
+
 ## Known limitations
 
 * 2D only: no load-transfer-driven camber changes, no per-wheel throttle
@@ -208,3 +408,10 @@ raw model) for anyone who wants them.
   lock-up blend.
 * `data/track.json` has one hand-authored circuit; everything else (cars,
   surfaces, tuning) is already set up for more.
+* Damage is a performance model, not a deformation model: the body is drawn
+  with scratches, dents, smoke and fire, but the collision shape never changes.
+* Tilt steering needs a device with a motion sensor and (on iOS) a user gesture
+  to grant permission; on a desktop the drag pad and the stick replace it.
+* The WebAudio layer (engine, tires, impacts, nitro) needs a user gesture
+  before the browser will let it start, so the first click or key press is what
+  turns the sound on.

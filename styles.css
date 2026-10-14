@@ -445,6 +445,18 @@ body {
 
 /* ---------- touch controls ------------------------------------------- */
 
+/* 9.4 analog steering: the whole stage is a drag pad, under the HUD buttons. */
+#touch-steer-pad {
+  position: absolute;
+  inset: 0;
+  display: none;
+  touch-action: none;
+}
+
+#touch-steer-pad.active {
+  background: radial-gradient(140% 90% at 50% 100%, rgba(120, 210, 255, 0.06), transparent 62%);
+}
+
 .touch-controls {
   position: absolute;
   inset: auto 0 0 0;
@@ -480,6 +492,18 @@ body {
   border-color: rgba(49, 208, 170, 0.42);
 }
 
+.touch-btn.small {
+  width: 56px;
+  height: 56px;
+  align-self: center;
+  font-size: 0.68em;
+}
+
+.touch-btn.small.active {
+  background: rgba(120, 210, 255, 0.28);
+  border-color: rgba(120, 210, 255, 0.55);
+}
+
 .touch-btn:active {
   background: rgba(255, 255, 255, 0.2);
 }
@@ -487,6 +511,9 @@ body {
 @media (hover: none) and (pointer: coarse) {
   .touch-controls {
     display: flex;
+  }
+  #touch-steer-pad {
+    display: block;
   }
   .hint {
     display: none;
@@ -578,4 +605,184 @@ body {
     width: 96px;
     height: 78px;
   }
+}
+
+/* ---------- 9.7 nitro -------------------------------------------------- */
+
+.panel-nitro {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: start;
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.nitro-row {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.nitro-key {
+  font-size: 0.7em;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.bar.nitro i {
+  background: linear-gradient(90deg, #1c6fa8, #6fd2ff);
+}
+
+.bar.nitro i.active {
+  background: linear-gradient(90deg, #33c2ff, #d6f3ff);
+  box-shadow: 0 0 14px rgba(120, 210, 255, 0.8);
+}
+
+.bar.nitro i.overheated {
+  background: linear-gradient(90deg, #8a2c14, var(--warn));
+}
+
+.nitro-state {
+  font-size: 0.7em;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  min-height: 1em;
+}
+
+.nitro-state.warn {
+  color: var(--warn);
+}
+
+/* ---------- 9.9 damage ------------------------------------------------- */
+
+.panel-damage {
+  grid-column: 1;
+  grid-row: 3;
+  align-self: start;
+  display: grid;
+  gap: 7px;
+  min-width: 220px;
+}
+
+.damage-row {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar.health i {
+  background: linear-gradient(90deg, #2b8a76, #7ce0a8);
+}
+
+.bar.health i.warn {
+  background: linear-gradient(90deg, #d19b12, var(--warn));
+}
+
+.bar.health i.critical {
+  background: linear-gradient(90deg, #a3241c, var(--danger));
+  box-shadow: 0 0 12px rgba(255, 64, 54, 0.6);
+}
+
+.health-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82em;
+  color: var(--text);
+  min-width: 2.4em;
+  text-align: right;
+}
+
+.zones {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 0.7em;
+  letter-spacing: 0.1em;
+}
+
+.zone {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  opacity: 0.25;
+  transition: opacity 140ms linear, background 140ms linear;
+}
+
+.zone.hit {
+  background: rgba(209, 155, 18, 0.35);
+  color: var(--text);
+}
+
+.zone.heavy {
+  background: rgba(163, 36, 28, 0.55);
+  color: #ffd9d6;
+}
+
+.zone-note {
+  margin-left: auto;
+  color: var(--warn);
+  min-height: 1em;
+}
+
+/* ---------- wallet ----------------------------------------------------- */
+
+.wallet {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.72em;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.wallet .coins {
+  color: #ffd166;
+  font-variant-numeric: tabular-nums;
+}
+
+.wallet .stars {
+  color: var(--accent);
+}
+
+/* ---------- 9.10 close call -------------------------------------------- */
+
+#close-call {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%) scale(0.9);
+  font-size: clamp(18px, 2.4vw, 32px);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #eaf6ff;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transition: opacity 120ms linear, transform 140ms ease-out;
+}
+
+#close-call.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+#close-call.slip {
+  font-size: clamp(12px, 1.4vw, 18px);
+  color: #9fdcff;
+  letter-spacing: 0.28em;
+  opacity: 0.85;
+}
+
+.touch-btn#touch-nitro {
+  background: rgba(60, 150, 220, 0.2);
+  border-color: rgba(120, 210, 255, 0.4);
 }

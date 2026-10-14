@@ -67,6 +67,8 @@ export class Drivetrain {
     this.gearChangeEvent = null;
     this.rpmBounce = 0;
     this.clutchLock = 0;
+    this.powerScale = 1;
+    this.revCeiling = e.revLimiterRpm;
     this.torqueNm = 0;
     this.powerKw = 0;
     this.engineBrakeForceN = 0;
@@ -115,8 +117,9 @@ export class Drivetrain {
   updateGearSelection(input, forwardSpeedMs, throttle, brake) {
     const t = this.tuning.drivetrain;
     const wheelRpm = this.rpmFromWheelSpeed(forwardSpeedMs);
-    const upShiftRpm = this.car.engine.redlineRpm * t.shiftUpAtRedlinePct;
-    const downShiftRpm = this.car.engine.redlineRpm * t.shiftDownAtRedlinePct;
+    const ceilingScale = Number.isFinite(this.revCeiling) ? this.revCeiling / this.car.engine.revLimiterRpm : 1;
+    const upShiftRpm = this.car.engine.redlineRpm * t.shiftUpAtRedlinePct * ceilingScale;
+    const downShiftRpm = this.car.engine.redlineRpm * t.shiftDownAtRedlinePct * ceilingScale;
 
     if (this.gear === GEAR_REVERSE) {
       // Pressing forward drive takes the car out of reverse once it has stopped
@@ -147,13 +150,23 @@ export class Drivetrain {
    * Advance the drivetrain by dt and return this frame's telemetry.
    *
    * @param {number} dt seconds (the fixed physics step)
-   * @param {{throttle:number, brake:number, handbrake:number}} input
+   * @param {{throttle:number, brake:number, handbrake:number,
+   *          powerScale?:number, speedCapScale?:number}} input
+   *   `powerScale` multiplies the drive force (9.7 nitro, 9.6 drift boost, 9.9
+   *   rear damage) and `speedCapScale` moves the rev ceiling that limits the top
+   *   speed - above 1 it over-revs (nitro), below 1 the engine simply stops
+   *   pulling at a lower rpm (a damaged car, with no fake limiter bounce).
    * @param {{speedMs:number, forwardSpeedMs:number, wheelSpin:number, grounded:boolean}} state
    */
   update(dt, input, state) {
     const t = this.tuning.drivetrain;
     const e = this.car.engine;
     const ms = dt * 1000;
+    const powerScale = Number.isFinite(input.powerScale) ? Math.max(0.05, input.powerScale) : 1;
+    const speedCapScale = Number.isFinite(input.speedCapScale) ? clamp(input.speedCapScale, 0.25, 1.5) : 1;
+    const revCeiling = e.revLimiterRpm * speedCapScale;
+    this.powerScale = powerScale;
+    this.revCeiling = revCeiling;
     this.lastDtMs = ms;
     this.gearChangeEvent = null;
     this.shiftTimer += ms;
@@ -183,10 +196,16 @@ export class Drivetrain {
     // locks, engine speed is wheel speed through the gearing.
     const freeRpm = idle + this.throttleIn * (this.car.drivetrain.launchRpm - idle);
     const targetRpm = inGear ? lerp(freeRpm, wheelRpm, this.clutchLock) : freeRpm;
-    this.rpm = expApproach(this.rpm, clamp(targetRpm, idle, e.revLimiterRpm), t.rpmResponsePerSecond, dt);
+    this.rpm = expApproach(this.rpm, clamp(targetRpm, idle, revCeiling), t.rpmResponsePerSecond, dt);
 
     /* ---- rev limiter ------------------------------------------- */
-    if (this.rpm >= e.revLimiterRpm - t.revLimiterRpmMargin && this.throttleIn > 0.05 && inGear) {
+    // Only the real limiter bounces (and cuts the sound). A rev ceiling that has
+    // been lowered by damage is just a sick engine: torque fades out, no flicker.
+    if (speedCapScale < 0.999) {
+      this.limiterActive = false;
+      this.limiterCut = false;
+      this.limiterTimer = 0;
+    } else if (this.rpm >= e.revLimiterRpm - t.revLimiterRpmMargin && this.throttleIn > 0.05 && inGear) {
       this.limiterActive = true;
       this.limiterTimer += ms;
       const cycle = this.limiterCut ? t.revLimiterCutMs : t.revLimiterRecoverMs;
@@ -207,6 +226,9 @@ export class Drivetrain {
     this.torqueCut = Math.max(cutFromShift, cutFromLimiter);
 
     let torqueNm = sampleTorqueCurve(e.torqueCurve, this.rpm) * this.throttleIn;
+    // Over the ceiling the engine stops making torque (a rev ceiling below the
+    // redline, or a nitro overrev above it).
+    if (this.rpm > revCeiling) torqueNm *= Math.max(0, 1 - (this.rpm - revCeiling) / 200);
     // Downshift blip: brief extra torque makes a downshift feel mechanical.
     if (this.shiftTimer < t.shiftBlipMs && this.lastShiftDirection < 0) {
       torqueNm *= 1 + t.throttleBlipDownshift;
@@ -219,7 +241,7 @@ export class Drivetrain {
     if (inReverse && forwardSpeedMs < -t.reverseTopSpeedMs) this.torqueNm = 0;
     const clutchScale = inGear ? lerp(t.launchTorqueScale, 1, this.clutchLock) : 0;
     const wheelForcePerNm = this.wheelForcePerNm;
-    this.driveForceN = this.torqueNm * wheelForcePerNm * clutchScale;
+    this.driveForceN = this.torqueNm * wheelForcePerNm * clutchScale * powerScale;
 
     // Engine braking / overrun: only while the engine is connected and the car
     // is actually rolling (otherwise it fights the handbrake at rest).
@@ -235,7 +257,7 @@ export class Drivetrain {
     const bounceAmp = this.limiterActive ? e.revLimiterRpm * t.limiterBouncePct : 0;
     const bouncePeriod = (t.revLimiterCutMs + t.revLimiterRecoverMs) / 1000;
     this.rpmBounce = bounceAmp * Math.sin((this.limiterTimer / 1000 / Math.max(0.016, bouncePeriod)) * Math.PI * 2);
-    this.rpmDisplay = clamp(this.rpm + wheelspinBoost + this.rpmBounce, idle, e.revLimiterRpm);
+    this.rpmDisplay = clamp(this.rpm + wheelspinBoost + this.rpmBounce, idle, revCeiling);
 
     return {
       rpm: this.rpm,
@@ -247,6 +269,8 @@ export class Drivetrain {
       shifting,
       torqueCut: this.torqueCut,
       limiterActive: this.limiterActive,
+      powerScale: this.powerScale,
+      revCeiling: this.revCeiling,
       limiterCut: this.limiterActive && this.limiterCut,
       clutchLock: this.clutchLock,
       torqueNm: this.torqueNm,

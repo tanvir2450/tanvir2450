@@ -289,12 +289,142 @@ export class World {
       normalX: n.x,
       normalY: n.y,
       energy: impactSpeed * Math.sqrt(invMass),
-      wall: hit.wall
+      wall: hit.wall,
+      kind: 'wall'
     };
     if (body.impactEvents) body.impactEvents.push(event);
     this.impacts.push(event);
     if (this.impacts.length > 64) this.impacts.splice(0, this.impacts.length - 64);
     return event;
+  }
+
+  /**
+   * SECTION 9.8 - two cars, one impulse.
+   *
+   * Momentum is exchanged through the classic two-body impulse with the
+   * rotational terms included, so a light car hit on a corner spins and a heavy
+   * car hit square-on just shoves the other one. The positional correction is
+   * split by inverse mass, which is what makes the heavier car "push" the
+   * lighter one instead of the pair meeting in the middle.
+   *
+   * The bounce depends on the relative speed, the mass ratio (through the
+   * reduced mass in the denominator) and the angle of the contact (through the
+   * normal, which comes from the SAT axis).
+   *
+   * @param {object} a Car-like (x, y, heading, vx, vy, yawRate, def.body)
+   * @param {object} b Car-like
+   * @returns {object|null} the contact event, or null when they are not touching
+   */
+  resolveCarCollision(a, b, dt = 0) {
+    const tuning = this.tuning.collision;
+    const aBody = a.def.body;
+    const bBody = b.def.body;
+    const boxA = bodyBox(a.x, a.y, a.heading, (aBody.cgToFrontM - aBody.cgToRearM) / 2, aBody.lengthM / 2, aBody.widthM / 2);
+    const boxB = bodyBox(b.x, b.y, b.heading, (bBody.cgToFrontM - bBody.cgToRearM) / 2, bBody.lengthM / 2, bBody.widthM / 2);
+    if (Math.abs(boxA.x - boxB.x) > boxA.halfW + boxB.halfW + boxA.halfH + boxB.halfH) return null;
+    if (Math.abs(boxA.y - boxB.y) > boxA.halfW + boxB.halfW + boxA.halfH + boxB.halfH) return null;
+    const contact = satLeastPenetration(boxA, boxB);
+    if (!contact) return null;
+
+    // n points from B towards A, so A is separated along +n and B along -n.
+    const n = contact.axis;
+    const push = contact.overlap + tuning.skinM;
+    const invMassA = 1 / aBody.massKg;
+    const invMassB = 1 / bBody.massKg;
+    const invMassTotal = invMassA + invMassB;
+    a.x += n.x * push * (invMassA / invMassTotal);
+    a.y += n.y * push * (invMassA / invMassTotal);
+    b.x -= n.x * push * (invMassB / invMassTotal);
+    b.y -= n.y * push * (invMassB / invMassTotal);
+
+    // Contact point: the deepest corner of A inside B (good enough for a car).
+    const corners = [
+      [boxA.halfW, boxA.halfH],
+      [boxA.halfW, -boxA.halfH],
+      [-boxA.halfW, -boxA.halfH],
+      [-boxA.halfW, boxA.halfH]
+    ].map(([lx, ly]) => ({ x: boxA.x + lx * boxA.cos - ly * boxA.sin, y: boxA.y + lx * boxA.sin + ly * boxA.cos }));
+    let contactPoint = corners[0];
+    let bestDot = Infinity;
+    for (const corner of corners) {
+      const dot = (corner.x - boxB.x) * -n.x + (corner.y - boxB.y) * -n.y;
+      if (dot < bestDot) {
+        bestDot = dot;
+        contactPoint = corner;
+      }
+    }
+
+    const rax = contactPoint.x - a.x;
+    const ray = contactPoint.y - a.y;
+    const rbx = contactPoint.x - b.x;
+    const rby = contactPoint.y - b.y;
+    const invInertiaA = 1 / aBody.yawInertiaKgM2;
+    const invInertiaB = 1 / bBody.yawInertiaKgM2;
+
+    const vaX = a.vx - a.yawRate * ray;
+    const vaY = a.vy + a.yawRate * rax;
+    const vbX = b.vx - b.yawRate * rby;
+    const vbY = b.vy + b.yawRate * rbx;
+
+    const tx = -n.y;
+    const ty = n.x;
+    const vRelN = (vaX - vbX) * n.x + (vaY - vbY) * n.y;
+    const vRelT = (vaX - vbX) * tx + (vaY - vbY) * ty;
+
+    const rnA = rax * n.y - ray * n.x;
+    const rnB = rbx * n.y - rby * n.x;
+    const rtA = rax * ty - ray * tx;
+    const rtB = rbx * ty - rby * tx;
+    const denomN = invMassA + invMassB + rnA * rnA * invInertiaA + rnB * rnB * invInertiaB;
+    const denomT = invMassA + invMassB + rtA * rtA * invInertiaA + rtB * rtB * invInertiaB;
+
+    const impactSpeed = Math.max(0, -vRelN);
+    let jn = 0;
+    if (vRelN < 0) {
+      const restitution = impactSpeed > tuning.hardImpactSpeedMs ? 0 : tuning.carRestitution;
+      jn = Math.min((-(1 + restitution) * vRelN) / denomN, tuning.carImpulseMaxSpeedMs / Math.max(invMassA, invMassB) * 0.5);
+    }
+    const jt = clamp(-vRelT / denomT, -tuning.carFriction * jn, tuning.carFriction * jn);
+
+    const impulseX = jn * n.x + jt * tx;
+    const impulseY = jn * n.y + jt * ty;
+    a.vx += impulseX * invMassA;
+    a.vy += impulseY * invMassA;
+    a.yawRate += (rax * impulseY - ray * impulseX) * invInertiaA;
+    b.vx -= impulseX * invMassB;
+    b.vy -= impulseY * invMassB;
+    b.yawRate -= (rbx * impulseY - rby * impulseX) * invInertiaB;
+
+    if (impactSpeed > 0.3) {
+      const loss = 1 - clamp(impactSpeed * tuning.impactSpeedLossPct * 0.08, 0, tuning.impactSpeedLossPct * 0.6);
+      a.vx *= loss;
+      a.vy *= loss;
+      b.vx *= loss;
+      b.vy *= loss;
+    }
+    void dt;
+
+    // Damage energy uses the REDUCED mass of the pair: a 1900 kg car hitting a
+    // 1090 kg one delivers more energy than two equal cars at the same closing
+    // speed, which is exactly what section 9.8 asks for.
+    const reducedMass = 1 / invMassTotal;
+    const energy = 0.5 * reducedMass * impactSpeed * impactSpeed;
+    const base = {
+      x: contactPoint.x,
+      y: contactPoint.y,
+      speedMs: impactSpeed,
+      energy,
+      closingSpeedMs: impactSpeed,
+      other: b.id,
+      kind: 'car'
+    };
+    const eventA = { ...base, normalX: n.x, normalY: n.y };
+    const eventB = { ...base, normalX: -n.x, normalY: -n.y, other: a.id };
+    if (a.impactEvents) a.impactEvents.push(eventA);
+    if (b.impactEvents) b.impactEvents.push(eventB);
+    this.impacts.push(eventA);
+    if (this.impacts.length > 64) this.impacts.splice(0, this.impacts.length - 64);
+    return eventA;
   }
 }
 

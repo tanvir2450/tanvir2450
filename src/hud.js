@@ -26,6 +26,7 @@ export class Hud {
     this.buildMinimapPath();
     this.lastSurface = null;
     this.surfaceTimer = 0;
+    this.closeCallTimer = 0;
   }
 
   buildMinimapPath() {
@@ -82,6 +83,70 @@ export class Hud {
     this.setBar(els.gripFront, front?.usageLat ?? 0, front?.sliding);
     this.setBar(els.gripRear, rear?.usageLat ?? 0, rear?.sliding);
     if (els.wheelspin) els.wheelspin.style.opacity = clamp01((rear?.wheelspin ?? 0) * 1.5).toString();
+
+    /* ---- 9.7 nitro ---------------------------------------------- */
+    const nitro = telemetry.nitro;
+    if (els.nitroFill) {
+      els.nitroFill.style.width = `${Math.round(clamp01(nitro?.pct ?? 0) * 100)}%`;
+      els.nitroFill.classList.toggle('active', Boolean(nitro?.active));
+      els.nitroFill.classList.toggle('overheated', Boolean(nitro?.overheated));
+    }
+    if (els.nitroState) {
+      els.nitroState.textContent = nitro?.overheated
+        ? `OVERHEAT ${(nitro.lockoutPct * 100).toFixed(0)}%`
+        : nitro?.active
+          ? 'BOOSTING'
+          : '';
+      els.nitroState.classList.toggle('warn', Boolean(nitro?.overheated));
+    }
+
+    /* ---- 9.9 damage --------------------------------------------- */
+    const damage = telemetry.damage;
+    if (els.healthFill) {
+      const pct = clamp01(damage?.healthPct ?? 1);
+      els.healthFill.style.width = `${Math.round(pct * 100)}%`;
+      els.healthFill.classList.toggle('warn', pct <= 0.5 && pct > 0.2);
+      els.healthFill.classList.toggle('critical', pct <= 0.2);
+    }
+    if (els.healthValue) els.healthValue.textContent = Math.round((damage?.healthPct ?? 1) * 100).toString();
+    for (const [element, zone] of [
+      [els.zoneFront, 'front'],
+      [els.zoneRear, 'rear'],
+      [els.zoneLeft, 'left'],
+      [els.zoneRight, 'right']
+    ]) {
+      if (!element) continue;
+      const pct = clamp01(damage?.zonePct?.[zone] ?? 0);
+      element.style.opacity = (0.25 + 0.75 * pct).toFixed(2);
+      element.classList.toggle('hit', pct > 0.35);
+      element.classList.toggle('heavy', pct > 0.75);
+    }
+    if (els.damageNote) {
+      const pull = damage?.steerPullDeg ?? 0;
+      els.damageNote.textContent =
+        damage?.wrecked ? 'WRECKED' : Math.abs(pull) > 0.3 ? `PULL ${pull > 0 ? 'L' : 'R'} ${Math.abs(pull).toFixed(1)}°` : '';
+    }
+
+    /* ---- coins / stars / challenges ------------------------------ */
+    const economy = state.economy;
+    if (economy) {
+      if (els.coins) els.coins.textContent = Math.round(economy.coins).toLocaleString();
+      if (els.stars) els.stars.textContent = `${economy.stars}/${economy.totalStars}`;
+      if (els.challengeNote) {
+        const next = economy.challenges.find((c) => !c.earned);
+        els.challengeNote.textContent = next ? `${next.name}: ${challengeProgress(next, economy)}` : 'all stars!';
+      }
+    }
+
+    /* ---- 9.10 close call popup ----------------------------------- */
+    if (els.closeCall) {
+      const near = state.traffic?.slipstream;
+      if (state.nearMiss && this.closeCallTimer <= 0) this.closeCallTimer = 1.4;
+      this.closeCallTimer = Math.max(0, (this.closeCallTimer ?? 0) - dt);
+      els.closeCall.textContent = this.closeCallTimer > 0 ? 'Close Call!' : near?.active ? 'SLIPSTREAM' : '';
+      els.closeCall.classList.toggle('visible', this.closeCallTimer > 0 || Boolean(near?.active));
+      els.closeCall.classList.toggle('slip', this.closeCallTimer <= 0 && Boolean(near?.active));
+    }
 
     /* ---- timers -------------------------------------------------- */
     const lap = state.lapTimer;
@@ -240,3 +305,14 @@ export class Hud {
 }
 
 export { clamp };
+
+/** "drift 1200 / 1500" style progress for the active challenge. */
+function challengeProgress(challenge, economy) {
+  const value = economy.metric(challenge.metric);
+  if (challenge.metric === 'bestLap') {
+    return value === Infinity ? `beat ${challenge.target}s` : `${value.toFixed(1)}s / ${challenge.target}s`;
+  }
+  if (challenge.metric === 'topSpeedKph') return `${Math.round(value)} / ${challenge.target} km/h`;
+  if (challenge.metric === 'lowestHealthPct') return `${Math.round(value * 100)}% / >${Math.round(challenge.target * 100)}%`;
+  return `${Math.round(value)} / ${challenge.target}`;
+}

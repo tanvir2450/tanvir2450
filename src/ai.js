@@ -47,7 +47,12 @@ export class Autopilot {
     // Closed-loop pace: the AI trims its speed from what the TIRES are actually
     // doing, so an optimistic corner-speed estimate cannot put it in the gravel.
     this.paceFactor = 0.9;
+    this.paceMax = 1;
     this.paceMin = 0.45;
+    // Traffic (9.10) drives the same autopilot with a lane offset and a pace
+    // ceiling; the player's demo driver leaves both at the defaults.
+    this.laneOffsetM = 0;
+    this.obstacleLookaheadM = 46;
     this.paceTrimPerSecond = 0.55;
     this.paceRecoverPerSecond = 0.12;
     this.usageTrim = 0.95;
@@ -61,9 +66,11 @@ export class Autopilot {
   reset() {
     this.stuckTimer = 0;
     this.recoverTimer = 0;
-    this.paceFactor = 0.9;
+    this.paceFactor = this.paceMax;
     this.index = 0;
     this.crossTrackM = 0;
+    this.avoidOffsetM = 0;
+    this.avoidSpeedMs = Infinity;
   }
 
   /** Track curvature sampled from the centreline, 1/m. */
@@ -107,8 +114,41 @@ export class Autopilot {
     return Math.sqrt(maxLat / curvature);
   }
 
+  /**
+   * Simple traffic awareness: anything close and roughly ahead is passed on the
+   * side with more room, and the speed target is capped to the slower car's so
+   * the autopilot does not simply rear-end it.
+   *
+   * @param {object} car
+   * @param {Array<{x:number,y:number,speedMs:number}>} obstacles
+   */
+  scanObstacles(car, obstacles) {
+    this.avoidOffsetM = 0;
+    this.avoidSpeedMs = Infinity;
+    if (!obstacles?.length) return;
+    const cos = Math.cos(car.heading);
+    const sin = Math.sin(car.heading);
+    let worst = null;
+    for (const other of obstacles) {
+      const dx = other.x - car.x;
+      const dy = other.y - car.y;
+      const ahead = dx * cos + dy * sin;
+      const lateral = -dx * sin + dy * cos;
+      if (ahead < 1 || ahead > this.obstacleLookaheadM) continue;
+      if (Math.abs(lateral) > 3.4) continue;
+      const closeness = 1 - ahead / this.obstacleLookaheadM;
+      if (!worst || closeness > worst.closeness) worst = { closest: other, ahead, lateral, closeness };
+    }
+    if (!worst) return;
+    // Pull to the side the obstacle is NOT on, by a car and a half.
+    const side = worst.lateral >= 0 ? -1 : 1;
+    this.avoidOffsetM = side * 2.6 * (0.4 + 0.6 * worst.closeness);
+    this.avoidOffsetM += this.laneOffsetM * 0.2;
+    this.avoidSpeedMs = Math.max(4, worst.closest.speedMs * 0.92);
+  }
+
   /** @returns {{steer:number, throttle:number, brake:number, handbrake:boolean}} */
-  update(dt, car) {
+  update(dt, car, context = {}) {
     const c = this.track.centreline;
     const n = c.length;
     const index = this.nearestIndex(car.x, car.y);
@@ -135,6 +175,9 @@ export class Autopilot {
       this.recoverTimer = Math.max(this.recoverTimer, 1.8);
       this.stuckTimer = 0;
     }
+
+    /* ---- 9.10: traffic ------------------------------------------ */
+    this.scanObstacles(car, context.obstacles);
 
     /* ---- how far off the racing line are we? -------------------- */
     // Positive means the car is to the RIGHT of the centreline (in the
@@ -170,6 +213,8 @@ export class Autopilot {
       if (allowed < targetSpeed) targetSpeed = allowed;
     }
     targetSpeed *= this.paceFactor;
+    // A lane offset (traffic) and a car in the way both reduce what we ask for.
+    targetSpeed = Math.min(targetSpeed, this.avoidSpeedMs + this.laneOffsetM * 0.05);
     // Running wide is a symptom, not a cure: if the line is already lost, slow
     // down and let the steering bring the nose back rather than ploughing on.
     const offLine = Math.max(0, Math.abs(crossTrack) - this.lineToleranceM);
@@ -187,7 +232,7 @@ export class Autopilot {
     if (stressed) {
       this.paceFactor = Math.max(this.paceMin, this.paceFactor - this.paceTrimPerSecond * dt);
     } else if (car.frontAxle.usageLimit < 0.6 && car.rearAxle.usageLimit < 0.6 && Math.abs(car.slipAngleBodyDeg) < 5) {
-      this.paceFactor = Math.min(1, this.paceFactor + this.paceRecoverPerSecond * dt);
+      this.paceFactor = Math.min(this.paceMax, this.paceFactor + this.paceRecoverPerSecond * dt);
     }
 
     /* ---- steering: pure pursuit + a cross-track term ------------ */
@@ -201,7 +246,13 @@ export class Autopilot {
       ahead = (ahead + 1) % n;
     }
     const target = c[ahead % n];
-    const desired = Math.atan2(target.y - car.y, target.x - car.x);
+    // Aim a little to the side of the centre line when the car has a lane to
+    // hold (traffic) or someone to pass.
+    const aheadTangent = Math.atan2(c[(ahead + 1) % n].y - c[ahead % n].y, c[(ahead + 1) % n].x - c[ahead % n].x);
+    const offsetM = this.laneOffsetM + this.avoidOffsetM;
+    const aimX = target.x + -Math.sin(aheadTangent) * offsetM;
+    const aimY = target.y + Math.cos(aheadTangent) * offsetM;
+    const desired = Math.atan2(aimY - car.y, aimX - car.x);
     const error = wrapAngle(desired - car.heading);
     const slip = car.slipAngleBodyDeg;
     let steer = clamp(
