@@ -419,6 +419,19 @@ test('9.8 a big impact adds hit-stop and shakes the camera', async () => {
     assert.equal(game.hitStopTimer, 0, 'a scrape must not freeze the game');
     assert.ok(game.car.damage.health <= before, 'rubbing a wall costs a little health');
 
+    /* ---- 9.4: the on-screen drag pad steers the booted game ---------- */
+    const pad = document.getElementById('touch-steer-pad');
+    assert.ok(pad, 'index.html must carry the analog drag pad');
+    pad.dispatch('pointerdown', { pointerId: 11, clientX: 400 });
+    pad.dispatch('pointermove', {
+      pointerId: 11,
+      clientX: 400 + (config.tuning.input.padDeadZonePx + config.tuning.input.padFullLockPx) / 2
+    });
+    const padSteer = game.input.sample(DT).steer;
+    pad.dispatch('pointerup', { pointerId: 11 });
+    assert.ok(padSteer > 0.4 && padSteer < 0.7, `dragging the pad must steer the real input, got ${padSteer.toFixed(2)}`);
+    assert.equal(game.input.touchOnly, true, 'the pad makes the booted app a touch device');
+
     /* ---- 9.4: difficulty decides how much help a touch player gets --- */
     // Frozen physics (paused) so the only thing moving is the assist itself.
     game.paused = true;
