@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- No pinch-zoom: the game owns every touch. (iOS ignores user-scalable, so main.ts also blocks gesturestart.) -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#070a14" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>Racing-Action Game</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --bg: #070a14;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        overscroll-behavior: none; /* no pull-to-refresh / rubber-banding */
+      }
+      body {
+        position: fixed; /* pins the page to the visible viewport on iOS Safari */
+        inset: 0;
+        width: 100%;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      #game {
+        position: fixed;
+        inset: 0;
+      }
+      /* The canvas always fills #game exactly. Its backing-store resolution is managed in
+         src/core/display.ts (device pixels), so CSS size and pixel size are independent. */
+      #game canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        touch-action: none;
+        outline: none;
+      }
+
+      /* Splash / fatal-error screen, shown until the first scene is ready. */
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        box-sizing: border-box;
+        background: var(--bg);
+        color: #5fe3ff;
+        font: 600 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        letter-spacing: 0.32em;
+        text-align: center;
+        text-transform: uppercase;
+        transition: opacity 0.25s ease;
+      }
+      #boot.done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #boot-msg {
+        margin: 0;
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+      #boot.failed {
+        color: #ff7a96;
+        letter-spacing: 0.04em;
+        text-transform: none;
+      }
+      #boot.failed #boot-msg {
+        animation: none;
+      }
+      @keyframes pulse {
+        50% {
+          opacity: 0.35;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+
+    <div id="boot"><p id="boot-msg">Loading</p></div>
+    <noscript>
+      <style>
+        #boot-msg {
+          display: none;
+        }
+      </style>
+      <p style="position: fixed; inset: 0; z-index: 11; display: grid; place-items: center; margin: 0; color: #ff7a96; font: 600 16px system-ui, sans-serif; text-align: center; padding: 24px">
+        This game needs JavaScript. Please enable it and reload.
+      </p>
+    </noscript>
+
+    <!-- Runs before the game bundle: if anything throws while booting, say so on screen
+         instead of leaving a phone user staring at an endless splash. -->
+    <script>
+      (function () {
+        function fail(message) {
+          var boot = document.getElementById('boot');
+          var msg = document.getElementById('boot-msg');
+          if (!boot || !msg || boot.classList.contains('done')) return; // only while the splash is up
+          boot.classList.add('failed');
+          msg.textContent = 'Could not start the game: ' + message;
+        }
+        window.__bootFail = fail;
+        window.addEventListener('error', function (e) {
+          fail(e.message || 'unknown error');
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          fail(String((e.reason && e.reason.message) || e.reason));
+        });
+        // A script that fails to download fires its error on the <script> element and never
+        // reaches the handler above, so listen in the capture phase (our own files only).
+        window.addEventListener(
+          'error',
+          function (e) {
+            var t = e.target;
+            if (!t || t === window) return;
+            var boot = document.getElementById('boot');
+            if (boot && boot.classList.contains('failed')) return; // keep the first (root-cause) message
+            var url = t.src || t.href || '';
+            var ours = url.indexOf(location.origin) === 0;
+            if (ours && (t.tagName === 'SCRIPT' || (t.tagName === 'LINK' && t.rel === 'modulepreload'))) {
+              fail('a game file could not be downloaded (' + url.replace(location.origin, '') + '). Check your connection and reload.');
+            }
+          },
+          true
+        );
+        // Slow mobile network: say so, instead of an unchanging splash screen.
+        window.setTimeout(function () {
+          var boot = document.getElementById('boot');
+          var msg = document.getElementById('boot-msg');
+          if (boot && msg && !boot.classList.contains('done') && !boot.classList.contains('failed')) {
+            msg.textContent = 'Still loading. Slow connection?';
+          }
+        }, 12000);
+      })();
+    </script>
+    <script nomodule>
+      window.__bootFail && window.__bootFail('this browser is too old. Please update it.');
+    </script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
