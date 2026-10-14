@@ -124,8 +124,10 @@ Each car in `cars.json` defines these tuning values, so every car feels distinct
 }
 ```
 
-> A starter `data/cars.json` seeded from this profile lives at
-> [`/data/cars.json`](../data/cars.json) in this repository.
+> The Falcon's 14 fields above remain unchanged in [`/data/cars.json`](../data/cars.json),
+> alongside seven additional selectable profiles and the surface table.
+> The playable Step 2 implementation and outstanding gates are tracked in
+> [the Step 2 guide](STEP2.md).
 
 ## 9.12 Tuning and Testing Tools (important for quality)
 Build a **debug panel** (toggle with a key) that shows: speed, RPM, gear, slip angle, grip per axle, FPS, and sliders to tweak constants live. This lets you tune the feel in minutes instead of hours. Add a **test track** (straights, hairpin, S-curves, ovals, off-road patch) for tuning each car.
@@ -315,6 +317,8 @@ It collects the polish requirements already implied by 9.6–9.8 and
 # BUILD PLAN — Implementation Notes
 
 > "In Step 2 (Driving), implement Section 9 fully, including the debug tuning panel (9.12), before moving to Step 3. In Step 10 (Polish), implement Section 11.5 to 11.9."
+
+**Status:** Step 2 playable driving lab is in progress ([details and remaining gates](STEP2.md)); Step 3 has not started.
 
 | Build step | Spec sections | Gate before moving on |
 |---|---|---|

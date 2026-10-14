@@ -1,0 +1,25 @@
+{
+  "$comment": "Step 2 tuning defaults. These are gameplay constants, not per-car stats. All time is seconds, distance m, forces N, angles degrees unless named otherwise. Sliders in the debug panel modify an in-memory copy only. Tuned on desktop first; phone feel/performance remains a release gate.",
+  "simulation": { "hz": 60, "pixelsPerMeter": 32, "maxFrameSeconds": 0.1, "maxStepsPerFrame": 6 },
+  "engine": { "idleRpm": 900, "redlineRpm": 7000, "peakPowerRpm": 5600, "launchRpmBonus": 750, "shiftUpRatio": 0.9, "shiftDownRatio": 0.36, "shiftCutSeconds": 0.12, "shiftMinInterval": 0.43, "limiterPeriod": 0.11, "limiterStartRatio": 0.999, "wheelRadius": 0.34, "finalDrive": 2.4, "drivetrainEfficiency": 0.72, "horsepowerWatts": 745.7, "forceScale": 1.18 },
+  "tires": { "gravity": 9.81, "frontLoad": 0.53, "frontStiffness": 3.1, "rearStiffness": 3.3, "powerGripShare": 0.52, "powerGripReferenceSpeed": 18, "brakeGripShare": 0.85, "maxCombinedGripShare": 0.9, "gripScale": 1.15, "yawInertiaScale": 1.5, "axleOffsetFraction": 0.38, "yawDamping": 2, "maxYawRate": 2.2, "lowSpeedLateralDamping": 6 },
+  "steering": { "turnRateDeg": 300, "returnRateDeg": 185, "keyboardRampSeconds": 0.12, "nitroScale": 0.84, "assistGain": 0.5, "assistMax": 0.28, "assistLookAhead": 14, "sideDamagePull": 0.085 },
+  "braking": { "deceleration": 13, "frontBias": 0.67, "handbrakeSeconds": 0.4, "handbrakeCooldown": 1.0, "handbrakeRearGrip": 0.35, "handbrakeDeceleration": 4.5, "handbrakeYawAssist": 2.8 },
+  "aero": { "airDensity": 1.225, "frontalArea": 2.1, "rollingCoefficient": 0.017, "speedSoftCap": 3.5 },
+  "drift": { "startAngleDeg": 15, "endAngleDeg": 11, "minSpeed": 7, "cleanExitSeconds": 0.6, "boostMps": 1.7, "scorePerSecond": 24, "secondsPerCombo": 1.9, "maxCombo": 5, "coinsPerPoints": 120 },
+  "nitro": { "forceMultiplier": 1.4, "speedMultiplier": 1.2, "drainPerSecond": 1, "driftChargePerSecond": 0.46, "startFraction": 0.6, "nearMissCharge": 0.45, "slipstreamChargePerSecond": 0.22, "lockoutSeconds": 1.5 },
+  "ai": {
+    "traffic": [
+      { "carId": "compact_starter", "laneOffset": -2.2, "spawnAhead": 35, "initialSpeed": 8, "targetSpeed": 10.5 },
+      { "carId": "spectre_rs", "laneOffset": 0, "spawnAhead": 85, "initialSpeed": 9, "targetSpeed": 11.8 },
+      { "carId": "ironclad", "laneOffset": 2.2, "spawnAhead": 135, "initialSpeed": 10, "targetSpeed": 12.6 }
+    ],
+    "lookAhead": 10, "lookAheadSpeedFactor": 0.6, "steerErrorScale": 0.48,
+    "turnLookAhead": 16, "tightTurnAngle": 0.65, "tightTurnSpeedScale": 0.72,
+    "brakeMargin": 1.7, "brakeInput": 0.55, "throttleInput": 0.68
+  },
+  "draft": { "maxRange": 19, "maxLateral": 3.1, "minHeadingDot": 0.84, "speedBoost": 0.06, "dragReduction": 0.32 },
+  "nearMiss": { "maxSeparation": 5.8, "rearmSeparation": 11, "minRelativeSpeed": 2, "stylePoints": 30, "coinReward": 5 },
+  "damage": { "maxHealth": 100, "impactScale": 0.0024, "zoneScale": 0.009, "frontTopSpeedPenalty": 0.3, "rearPowerPenalty": 0.3, "smokeAt": 0.5, "fireAt": 0.2, "quickRepairHealth": 35, "repairCostPerHealth": 3, "startingCoins": 250, "repairPickupRadius": 3, "repairPickupMinDamage": 5, "wreckLinearDamping": 2.8, "wreckYawDamping": 4 },
+  "collision": { "restitution": 0.17, "wallRestitution": 0.06, "wallFriction": 0.12, "positionalCorrection": 0.86, "penetrationSlop": 0.01, "minImpactSpeed": 2, "bigImpactSpeed": 8, "hitStopSeconds": 0.05, "wallScrapeSpeed": 7, "wallScrapeDamagePerSecond": 0.6, "spinTransfer": 0.14, "maxSpinKick": 0.35 }
+}

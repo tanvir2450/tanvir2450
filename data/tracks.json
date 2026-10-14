@@ -1,0 +1,80 @@
+{
+  "$comment": "Coordinates in meters. Closed Catmull-Rom centerlines; roadside is grass except dirt patches. Proving Grounds includes a straight, linked S-curves, tight hairpin and mixed-surface patches. Night Oval tests speed; Launch Strip provides a 400 m dry 0–100 run.",
+  "tracks": [
+    {
+      "id": "proving_ground",
+      "code": "PG-01",
+      "name": "Proving Grounds",
+      "subtitle": "Straight · S-curves · hairpin · mixed surface",
+      "roadWidth": 12,
+      "start": { "x": 60, "y": 122 },
+      "points": [
+        [24, 115], [45, 122], [80, 122], [115, 122], [150, 122], [173, 120],
+        [195, 114], [210, 100], [187, 86], [210, 72], [231, 76], [248, 64],
+        [251, 46], [243, 29], [225, 22], [207, 27], [200, 44], [181, 34],
+        [158, 31], [136, 37], [111, 34], [85, 35], [60, 35], [42, 45],
+        [27, 51], [19, 68], [18, 88]
+      ],
+      "patches": [
+        { "x": 166, "y": 120, "rx": 16, "ry": 8, "surface": "wet", "label": "WET" },
+        { "x": 108, "y": 35, "rx": 17, "ry": 7.5, "surface": "dirt", "label": "DIRT" },
+        { "x": 95, "y": 50, "rx": 26, "ry": 11, "surface": "dirt", "label": "OFF-ROAD" },
+        { "x": 129, "y": 122, "rx": 2.5, "ry": 2.5, "surface": "oil", "label": "OIL" }
+      ],
+      "barriers": [
+        [68, 133, 109, 133],
+        [255, 41, 255, 53]
+      ],
+      "repair": { "x": 85, "y": 122 },
+      "markers": [
+        { "x": 95, "y": 116, "text": "01 / STRAIGHT" },
+        { "x": 210, "y": 103, "text": "02 / S-CURVES" },
+        { "x": 238, "y": 21, "text": "03 / HAIRPIN" },
+        { "x": 60, "y": 28, "text": "04 / OFF-ROAD" }
+      ]
+    },
+    {
+      "id": "oval",
+      "code": "OV-02",
+      "name": "Night Oval",
+      "subtitle": "High-speed grip and slipstream loop",
+      "roadWidth": 14,
+      "start": { "x": 130, "y": 127 },
+      "oval": { "cx": 130, "cy": 75, "rx": 102, "ry": 52, "segments": 48 },
+      "patches": [
+        { "x": 200, "y": 39, "rx": 11, "ry": 8, "surface": "wet", "label": "WET" },
+        { "x": 56, "y": 115, "rx": 12, "ry": 7, "surface": "dirt", "label": "DIRT" }
+      ],
+      "barriers": [
+        [109, 138, 151, 138]
+      ],
+      "repair": { "x": 153, "y": 126 },
+      "markers": [
+        { "x": 130, "y": 115, "text": "OVAL / START" },
+        { "x": 175, "y": 18, "text": "HIGH SPEED" }
+      ]
+    },
+    {
+      "id": "drag_strip",
+      "code": "LS-03",
+      "name": "Launch Strip",
+      "subtitle": "400 m dry straight · calibrated 0–100 runs",
+      "roadWidth": 14,
+      "start": { "x": 45, "y": 130 },
+      "points": [
+        [0, 120], [40, 130], [100, 130], [160, 130], [220, 130],
+        [280, 130], [340, 130], [400, 130], [436, 125], [449, 112],
+        [438, 97], [400, 92], [340, 92], [280, 92], [220, 92],
+        [160, 92], [100, 92], [40, 92], [0, 100], [-12, 112]
+      ],
+      "patches": [],
+      "barriers": [],
+      "repair": { "x": 74, "y": 130 },
+      "markers": [
+        { "x": 145, "y": 122, "text": "100 M" },
+        { "x": 245, "y": 122, "text": "200 M" },
+        { "x": 345, "y": 122, "text": "300 M" }
+      ]
+    }
+  ]
+}

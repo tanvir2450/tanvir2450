@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f1a" />
+  <meta name="description" content="Neon Drive — a playable 60 Hz car-handling test lab." />
+  <title>Neon Drive // Test Lab</title>
+</head>
+<body>
+  <div id="app">
+    <div id="game" aria-label="Top-down driving test track"></div>
+    <div class="vignette" aria-hidden="true"></div>
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">N<span>·</span>D</div>
+        <div><strong>NEON DRIVE</strong><small>THE HANDLING LAB <span class="build-tag">/ STEP 02</span></small></div>
+      </div>
+      <div class="run-indicator"><i></i><span>PHYSICS LIVE</span><b>60 HZ</b></div>
+      <div class="top-actions">
+        <button id="sound-toggle" class="icon-button" type="button" aria-label="Turn on engine sound" title="Engine sound">♪ <span id="sound-label">OFF</span></button>
+        <button id="debug-toggle" class="top-button" type="button" aria-controls="debug-panel" aria-expanded="false"><span class="button-glyph">⌘</span> TELEMETRY <kbd>T</kbd></button>
+      </div>
+    </header>
+
+    <aside class="garage glass" aria-label="Vehicle and test track settings">
+      <div class="panel-eyebrow"><span class="dot-cyan"></span> TEST VEHICLE <span class="fraction" id="car-counter">01 / 08</span></div>
+      <div class="vehicle-name" id="vehicle-name">FALCON</div>
+      <div class="vehicle-sub" id="vehicle-class">Sport coupe</div>
+      <div class="vehicle-tagline" id="vehicle-tagline">A precise all-rounder with a playful tail.</div>
+      <label class="field-label" for="car-select">SELECT CAR</label>
+      <div class="select-wrap"><select id="car-select" aria-label="Choose a car"></select></div>
+      <div class="stat-row"><span>POWER</span><div class="stat-track"><i id="stat-power"></i></div><b id="stat-power-label">310 hp</b></div>
+      <div class="stat-row"><span>GRIP</span><div class="stat-track"><i id="stat-grip"></i></div><b id="stat-grip-label">1.0</b></div>
+      <div class="stat-row"><span>ARMOR</span><div class="stat-track"><i id="stat-armor"></i></div><b id="stat-armor-label">4</b></div>
+      <div class="panel-rule"></div>
+      <div class="panel-eyebrow"><span class="dot-magenta"></span> PROVING GROUND</div>
+      <label class="field-label" for="track-select">TEST ROUTE</label>
+      <div class="select-wrap"><select id="track-select" aria-label="Choose a test track"></select></div>
+      <p class="route-description" id="route-description">Straight · S-curves · hairpin · mixed surface</p>
+      <label class="field-label" for="assist-select">STEERING ASSIST</label>
+      <div class="select-wrap"><select id="assist-select" aria-label="Steering assist difficulty"><option value="1">NOVICE / ON</option><option value="0.4">STREET / LIGHT</option><option value="0">PRO / OFF</option></select></div>
+      <div class="panel-buttons">
+        <button id="reset-button" class="btn-primary" type="button">↻ &nbsp; RESET RUN <kbd>R</kbd></button>
+        <button id="service-button" class="btn-quiet" type="button">✦ &nbsp; SERVICE <span id="service-cost">—</span></button>
+      </div>
+      <p class="garage-note">ONE FREE REPAIR PICKUP PER RUN <span>+</span> CREDITS EARNED FROM STYLE</p>
+    </aside>
+
+    <aside class="minimap glass" aria-label="Track map and driving statistics">
+      <div class="minimap-title"><span>ROUTE // <b id="route-id">PG-01</b></span><span class="signal-bars">▁▃▆</span></div>
+      <canvas id="minimap-canvas" width="224" height="133" aria-label="Minimap of test track"></canvas>
+      <div class="map-footer"><span id="surface-label">ASPHALT</span><span id="timer-label">00:00.0</span></div>
+    </aside>
+
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <div class="hud">
+      <section class="speed-cluster glass" aria-label="Speedometer">
+        <div class="speed-label">VELOCITY <span>// KM/H</span></div>
+        <div class="speed-main"><strong id="speed-value">000</strong><span class="speed-unit">KM/H</span></div>
+        <div class="rpm-track"><div id="rpm-fill"></div><span class="rpm-redzone"></span></div>
+        <div class="dial-bottom"><span>RPM <b id="rpm-value">0.9</b> <small>×1000</small></span><span class="gear-box">GEAR <b id="gear-value">1</b></span></div>
+      </section>
+      <section class="status-cluster glass" aria-label="Vehicle status">
+        <div class="hud-upper"><span>VEHICLE STATUS <small id="car-status">SYSTEMS NOMINAL</small></span><div id="zone-icon" class="zone-icon" aria-label="Damage by car side"><i data-zone="rear"></i><i data-zone="left"></i><i data-zone="front"></i><i data-zone="right"></i></div><span class="credits">◈ <b id="coin-value">250</b> CR</span></div>
+        <div class="meter-line"><span class="meter-caption">HULL</span><div class="meter-track health-meter"><div id="health-fill"></div></div><b id="health-value">100%</b></div>
+        <div class="meter-line"><span class="meter-caption">N₂O</span><div class="meter-track nitro-meter"><div id="nitro-fill"></div></div><b id="nitro-value">60%</b></div>
+        <div class="status-footer"><span id="drift-status">DRIFT <b>—</b></span><span id="style-value">STYLE 00000</span><span id="draft-status">◌ NO DRAFT</span></div>
+      </section>
+      <div class="key-guide glass"><div class="key-guide-title">DRIVING CONTROLS</div><div><kbd>W</kbd> GAS &nbsp; <kbd>S</kbd> BRAKE</div><div><kbd>A</kbd><kbd>D</kbd> STEER &nbsp; <kbd>SPACE</kbd> DRIFT</div><div><kbd>⇧</kbd> NITRO &nbsp; <kbd>R</kbd> RESET</div><small>ARROWS ALSO WORK · T = TELEMETRY</small></div>
+    </div>
+
+    <div class="touch-controls" aria-label="Touch driving controls">
+      <div class="steer-zone"><div class="touch-hint">STEER <button id="tilt-toggle" type="button" aria-label="Enable device tilt steering">◉ TILT</button><button id="assist-cycle" type="button" class="active" aria-label="Steering assist: novice. Tap for street or pro">A:ON</button></div><div id="steer-pad" class="steer-pad" role="slider" tabindex="0" aria-label="Steering" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0"><div class="steer-track"></div><div class="steer-thumb" id="steer-thumb">◀ <span>◆</span> ▶</div></div></div>
+      <div class="touch-buttons"><button data-control="handbrake" type="button" class="touch-button small-btn">DRIFT</button><button data-control="nitro" type="button" class="touch-button nitro-btn">N₂O</button><button data-control="brake" type="button" class="touch-button brake-btn">BRAKE</button><button data-control="throttle" type="button" class="touch-button gas-btn">GAS</button></div>
+    </div>
+
+    <aside id="debug-panel" class="debug-panel glass" aria-label="Live physics telemetry" hidden>
+      <div class="debug-head"><div><small>ENGINEERING // LIVE DATA</small><h2>TELEMETRY</h2></div><button id="debug-close" type="button" class="close-button" aria-label="Close telemetry">×</button></div>
+      <div class="debug-grid">
+        <div><small>SPEED</small><b id="dbg-speed">0</b><i>KM/H</i></div><div><small>ENGINE</small><b id="dbg-rpm">900</b><i>RPM</i></div>
+        <div><small>GEAR</small><b id="dbg-gear">1 / 5</b><i>AUTO</i></div><div><small>RENDER</small><b id="dbg-fps">60</b><i>FPS</i></div>
+        <div><small>SLIP ANGLE</small><b id="dbg-slip">0°</b><i>DEGREES</i></div><div><small>SURFACE</small><b id="dbg-surface">DRY</b><i>TRACTION</i></div>
+      </div>
+      <div class="grip-info"><div><span>FRONT AXLE</span><b id="dbg-front">0%</b></div><div class="grip-track"><i id="front-grip-fill"></i></div><div><span>REAR AXLE</span><b id="dbg-rear">0%</b></div><div class="grip-track rear"><i id="rear-grip-fill"></i></div><small>&gt; 100% = SLIDING / LIMIT REACHED</small></div>
+      <div class="debug-divider"></div><div class="tuning-title">LIVE TUNING <small>NO RELOAD NEEDED</small></div>
+      <div id="tuning-sliders"></div>
+      <button id="tuning-reset" type="button" class="btn-quiet">↺ &nbsp; RESTORE DEFAULT TUNING</button>
+      <p class="debug-note">Changes affect this run only. Source defaults: <code>data/tuning.json</code> · Vehicle stats: <code>data/cars.json</code></p>
+    </aside>
+    <div class="orientation-hint">BEST EXPERIENCED IN LANDSCAPE · ROTATE YOUR DEVICE</div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
